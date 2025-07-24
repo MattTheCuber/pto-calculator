@@ -7,12 +7,14 @@ import utilities.AccrualPeriod;
 public class UserSettings {
     double accrualRate;
     AccrualPeriod accrualPeriod;
+    // Add acrrual compounding period
     double maxBalance;
     double carryOverLimit;
     LocalDate expirationDate;
     double currentBalance;
 
     public UserSettings() {
+        this.currentBalance = 0.0;
     }
 
     public UserSettings(double accrualRate, AccrualPeriod accrualPeriod, double maxBalance, double carryOverLimit,
@@ -40,6 +42,10 @@ public class UserSettings {
      * @param accrualRate the accrual rate to set
      */
     public void setAccrualRate(double accrualRate) {
+        if (accrualRate < 0) {
+            throw new IllegalArgumentException("Accrual rate cannot be negative");
+        }
+
         this.accrualRate = accrualRate;
     }
 
@@ -76,6 +82,10 @@ public class UserSettings {
      * @param maxBalance the maximum balance to set
      */
     public void setMaxBalance(double maxBalance) {
+        if (maxBalance <= 0) {
+            throw new IllegalArgumentException("Maximum balance must be greater than zero");
+        }
+
         this.maxBalance = maxBalance;
     }
 
@@ -94,6 +104,10 @@ public class UserSettings {
      * @param carryOverLimit the carry over limit to set
      */
     public void setCarryOverLimit(double carryOverLimit) {
+        if (carryOverLimit < 0) {
+            throw new IllegalArgumentException("Carry over limit cannot be negative");
+        }
+
         this.carryOverLimit = carryOverLimit;
     }
 
@@ -130,6 +144,10 @@ public class UserSettings {
      * @param currentBalance the current balance to set
      */
     public void setCurrentBalance(double currentBalance) {
+        if (currentBalance < 0) {
+            throw new IllegalArgumentException("Current balance cannot be negative");
+        }
+
         this.currentBalance = currentBalance;
     }
 }

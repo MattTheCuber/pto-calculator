@@ -37,6 +37,7 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
+import utilities.AccrualPeriod;
 import utilities.PTOCalculator;
 
 /**
@@ -63,6 +64,10 @@ public class PTOCalculatorApp extends Application {
     public void start(Stage primaryStage) throws Exception {
         // Initialize program classes
         userSettings = new UserSettings();
+        // TODO: Remove hardcoded values
+        userSettings.setCurrentBalance(20);
+        userSettings.setAccrualRate(2.308);
+        userSettings.setAccrualPeriod(AccrualPeriod.WEEKLY);
         ptoCalculator = new PTOCalculator(userSettings);
         ptoDatabase = new PTODatabase();
 
@@ -164,6 +169,7 @@ public class PTOCalculatorApp extends Application {
                 // Continuously update the calendar view with the current date and time
                 while (true) {
                     Platform.runLater(() -> {
+                        // TODO: If date changes, update userSettings.currentBalance
                         calendarView.setToday(LocalDate.now());
                         calendarView.setTime(LocalTime.now());
                     });
@@ -199,6 +205,7 @@ public class PTOCalculatorApp extends Application {
                 calendarView.getZoneId());
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
+                .distinct()
                 .collect(Collectors.toList());
         return entries;
     }
@@ -210,6 +217,7 @@ public class PTOCalculatorApp extends Application {
                 calendarView.getZoneId());
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
+                .distinct()
                 .collect(Collectors.toList());
         return entries;
     }
@@ -222,6 +230,7 @@ public class PTOCalculatorApp extends Application {
                 calendarView.getZoneId());
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
+                .distinct()
                 .collect(Collectors.toList());
         return entries;
     }
@@ -239,6 +248,7 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + (evt.getEntry().isFullDay() ? "full day" : "partial day"));
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+            // TODO: Enforce configurable increments (e.g., 15 minutes or 8 hours)
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + evt.getEntry().getInterval());
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
@@ -250,8 +260,9 @@ public class PTOCalculatorApp extends Application {
         if (evt.getButton().equals(MouseButton.PRIMARY)) {
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
-            if (date != null) {
-                System.out.println("Clicked on: " + date.toLocalDate());
+            if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
+                double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
+                System.out.println("Balance at start of " + date.toLocalDate() + ": " + balance);
             }
         }
     }
