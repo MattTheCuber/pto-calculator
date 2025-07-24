@@ -188,15 +188,19 @@ public class PTOCalculatorApp extends Application {
         calendar.addEntry(entry1);
     }
 
+    public List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(startDate, endDate, ZoneId.systemDefault());
+        List<Entry<?>> entries = entriesMap.values().stream().flatMap(List::stream).collect(Collectors.toList());
+        return entries;
+    }
+
     public List<Entry<?>> getAllEntries() {
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 // LocalDate.MIN results in 0 entries
                 LocalDate.of(-99999999, 1, 1),
                 LocalDate.MAX,
                 ZoneId.systemDefault());
-        List<Entry<?>> entries = entriesMap.values().stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
+        List<Entry<?>> entries = entriesMap.values().stream().flatMap(List::stream).collect(Collectors.toList());
         return entries;
     }
 
@@ -213,7 +217,6 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + (evt.getEntry().isFullDay() ? "full day" : "partial day"));
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
-            // date/time changed
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + evt.getEntry().getInterval());
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
