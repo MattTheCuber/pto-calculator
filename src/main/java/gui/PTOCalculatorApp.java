@@ -7,6 +7,10 @@ package gui;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.calendarfx.model.Calendar;
 import com.calendarfx.model.Calendar.Style;
@@ -184,7 +188,36 @@ public class PTOCalculatorApp extends Application {
         calendar.addEntry(entry1);
     }
 
+    public List<Entry<?>> getAllEntries() {
+        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
+                // LocalDate.MIN results in 0 entries
+                LocalDate.of(-99999999, 1, 1),
+                LocalDate.MAX,
+                ZoneId.systemDefault());
+        List<Entry<?>> entries = entriesMap.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        return entries;
+    }
+
     private void eventHandler(CalendarEvent evt) {
-        System.out.println("Event: " + evt.getEventType() + " - " + evt.getCalendar().getName());
+        if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
+            if (evt.getEntry().getCalendar() != null) {
+                System.out.println("Added entry " + evt.getEntry().getTitle());
+            } else {
+                System.out.println("Removed entry " + evt.getEntry().getTitle());
+            }
+
+            System.out.println("Number of entries: " + getAllEntries().size());
+        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
+            System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
+                    + (evt.getEntry().isFullDay() ? "full day" : "partial day"));
+        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+            // date/time changed
+            System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
+                    + evt.getEntry().getInterval());
+        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
+            System.out.println("Entry title changed to" + evt.getEntry().getTitle());
+        }
     }
 }
