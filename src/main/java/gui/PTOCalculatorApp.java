@@ -29,6 +29,7 @@ import com.calendarfx.view.popover.EntryPopOverContentPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -236,14 +237,15 @@ public class PTOCalculatorApp extends Application {
     }
 
     private void eventHandler(CalendarEvent evt) {
+        // TODO: Save entries to database
         if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
             if (evt.getEntry().getCalendar() != null) {
+                // TODO: Restrict to weekdays
                 System.out.println("Added entry " + evt.getEntry().getTitle());
             } else {
                 System.out.println("Removed entry " + evt.getEntry().getTitle());
             }
 
-            System.out.println("Number of entries: " + getAllEntries().size());
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + (evt.getEntry().isFullDay() ? "full day" : "partial day"));
@@ -252,8 +254,19 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + evt.getEntry().getInterval());
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
-            System.out.println("Entry title changed to" + evt.getEntry().getTitle());
+            System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
+
+        if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), getFutureEntries())) {
+            evt.getEntry().setCalendar(null);
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Invalid Entry");
+            alert.setHeaderText("Not enough PTO balance");
+            alert.setContentText("You will not have enough PTO balance to take this day off!");
+            alert.showAndWait();
+        }
+
+        System.out.println("Number of entries: " + getAllEntries().size());
     }
 
     private void onClick(MouseEvent evt) {
@@ -262,6 +275,7 @@ public class PTOCalculatorApp extends Application {
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
             if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
                 double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
+                // TODO: Display balance in GUI
                 System.out.println("Balance at start of " + date.toLocalDate() + ": " + balance);
             }
         }

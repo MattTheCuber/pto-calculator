@@ -63,7 +63,14 @@ public class PTOCalculator {
                 : 0;
     }
 
-    public boolean validateEntry(Entry<?> entry) {
-        return true;
+    public boolean validateEntry(Entry<?> entry, List<Entry<?>> entries) {
+        if (entry.isMultiDay()) {
+            double days = entry.getStartDate().toEpochDay() - entry.getEndDate().toEpochDay();
+            return computeBalanceAtDate(entry.getEndDate(), entries) >= days * 8;
+        } else if (!entry.getStartDate().isBefore(LocalDate.now())) {
+            return computeBalanceAtDate(entry.getStartDate(), entries) >= entry.getDuration().toHours();
+        } else {
+            return true;
+        }
     }
 }
