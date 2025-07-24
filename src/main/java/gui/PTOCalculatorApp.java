@@ -15,19 +15,27 @@ import com.calendarfx.model.CalendarSource;
 import com.calendarfx.model.Entry;
 import com.calendarfx.model.Interval;
 import com.calendarfx.view.CalendarView;
+import com.calendarfx.view.DateControl.CreateEntryParameter;
+import com.calendarfx.view.DateControl.EntryContextMenuParameter;
+import com.calendarfx.view.popover.EntryDetailsView;
+import com.calendarfx.view.popover.EntryHeaderView;
+import com.calendarfx.view.popover.EntryPopOverContentPane;
 
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 /**
  * Main class for the Paid Time Off Calculator GUI.
  */
 public class PTOCalculatorApp extends Application {
     CalendarView calendarView;
-    Calendar calendar;
+    Calendar<?> calendar;
 
     /**
      * Main method to run the application.
@@ -40,33 +48,85 @@ public class PTOCalculatorApp extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // Create the main calendar view
         calendarView = new CalendarView();
 
-        calendar = new Calendar("Time Off");
+        // Set the current date and time for the calendar view
+        calendarView.setRequestedTime(LocalTime.now());
+
+        // Create the time off calendar
+        calendar = new Calendar<>("Time Off");
         calendar.setStyle(Style.STYLE1);
 
+        // Add the existing entries to the calendar
+        addEntries();
+
+        // Add a listener to handle calendar events
         EventHandler<CalendarEvent> handler = evt -> eventHandler(evt);
         calendar.addEventHandler(handler);
 
-        Interval interval1 = new Interval(LocalDate.of(2025, 7, 24), LocalTime.of(0, 0), LocalDate.of(2025, 7, 25),
-                LocalTime.of(23, 59));
-        Entry entry1 = new Entry("Vacation", interval1);
-        entry1.setFullDay(true);
-        calendar.addEntry(entry1);
-
+        // Add the calendar to the calendar view
         CalendarSource calendarSource = new CalendarSource("Calendars");
         calendarSource.getCalendars().add(calendar);
-
         calendarView.getCalendarSources().add(calendarSource);
+
+        // Set the default calendar to the time off calendar
         calendarView.setDefaultCalendarProvider(control -> calendar);
 
-        calendarView.setRequestedTime(LocalTime.now());
+        // Customize the calendar view and controls
         calendarView.setShowAddCalendarButton(false);
         calendarView.setShowSourceTray(false);
         calendarView.setShowSourceTrayButton(false);
-        calendarView.getCalendars().getFirst().setStyle(Style.STYLE2);
+
+        // Show the month page by default
         calendarView.showMonthPage();
 
+        // Customize the default entry factory to create entries with specific
+        // properties
+        Callback<CreateEntryParameter, Entry<?>> defaultEntryFactory = calendarView.getEntryFactory();
+        calendarView.setEntryFactory(param -> {
+            // Use the default entry factory to create a new entry
+            Entry<?> entry = defaultEntryFactory.call(param);
+            // Customize the entry properties
+            entry.setTitle("Vacation");
+            entry.setInterval(LocalTime.of(9, 0), LocalTime.of(17, 0));
+            entry.setFullDay(true);
+            return entry;
+        });
+
+        // Customize the entry details popover content for adding/editing entries
+        calendarView.setEntryDetailsPopOverContentCallback(param -> {
+            // Default implementation for creating the popover content
+            EntryPopOverContentPane popUp = new EntryPopOverContentPane(
+                    param.getPopOver(),
+                    param.getDateControl(),
+                    param.getEntry());
+
+            // Remove the location and calendar selection controls
+            EntryHeaderView header = (EntryHeaderView) popUp.getHeader();
+            header.getChildren().remove(2);
+            header.getChildren().remove(1);
+
+            // Remove the recurrence controls
+            EntryDetailsView details = (EntryDetailsView) popUp.getPanes().getFirst().getContent();
+            GridPane box = (GridPane) details.getChildren().getFirst();
+            box.getChildren().remove(9);
+            box.getChildren().remove(8);
+
+            return popUp;
+        });
+
+        // Customize the context menu for entry creation
+        Callback<EntryContextMenuParameter, ContextMenu> defaultEntryContextMenuFactory = calendarView
+                .getEntryContextMenuCallback();
+        calendarView.setEntryContextMenuCallback(param -> {
+            // Remove the calendar selection
+            ContextMenu contextMenu = defaultEntryContextMenuFactory.call(param);
+            contextMenu.getItems().remove(1);
+            return contextMenu;
+        });
+
+        // Create the main application layout
         Scene scene = new Scene(calendarView);
         primaryStage.setTitle("Paid Time Off Planning Tool");
         primaryStage.setScene(scene);
@@ -77,9 +137,11 @@ public class PTOCalculatorApp extends Application {
     }
 
     public void startUpdateThread() {
+        // Create a thread to update the calendar view time every 10 seconds
         Thread updateTimeThread = new Thread("Calendar: Update Time Thread") {
             @Override
             public void run() {
+                // Continuously update the calendar view with the current date and time
                 while (true) {
                     Platform.runLater(() -> {
                         calendarView.setToday(LocalDate.now());
@@ -96,9 +158,18 @@ public class PTOCalculatorApp extends Application {
             }
         };
 
+        // Configure and start the thread
         updateTimeThread.setPriority(Thread.MIN_PRIORITY);
         updateTimeThread.setDaemon(true);
         updateTimeThread.start();
+    }
+
+    private void addEntries() {
+        Interval interval1 = new Interval(LocalDate.of(2025, 7, 24), LocalTime.of(9, 0), LocalDate.of(2025, 7, 25),
+                LocalTime.of(17, 00));
+        Entry<Object> entry1 = new Entry<>("Vacation", interval1);
+        entry1.setFullDay(true);
+        calendar.addEntry(entry1);
     }
 
     private void eventHandler(CalendarEvent evt) {
