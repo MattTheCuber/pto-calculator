@@ -7,7 +7,7 @@ package gui;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,15 +21,17 @@ import com.calendarfx.model.Interval;
 import com.calendarfx.view.CalendarView;
 import com.calendarfx.view.DateControl.CreateEntryParameter;
 import com.calendarfx.view.DateControl.EntryContextMenuParameter;
+import com.calendarfx.view.MonthView;
 import com.calendarfx.view.popover.EntryDetailsView;
 import com.calendarfx.view.popover.EntryHeaderView;
 import com.calendarfx.view.popover.EntryPopOverContentPane;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
@@ -77,9 +79,9 @@ public class PTOCalculatorApp extends Application {
         // Add the existing entries to the calendar
         addEntries();
 
-        // Add a listener to handle calendar events
-        EventHandler<CalendarEvent> handler = evt -> eventHandler(evt);
-        calendar.addEventHandler(handler);
+        // Add listeners to handle calendar events
+        calendar.addEventHandler(evt -> eventHandler(evt));
+        calendarView.getMonthPage().getMonthView().addEventHandler(MouseEvent.MOUSE_CLICKED, evt -> onClick(evt));
 
         // Add the calendar to the calendar view
         CalendarSource calendarSource = new CalendarSource("Calendars");
@@ -96,6 +98,8 @@ public class PTOCalculatorApp extends Application {
 
         // Show the month page by default
         calendarView.showMonthPage();
+        calendarView.getMonthPage().getMonthView().setShowWeekNumbers(false);
+        calendarView.getMonthPage().getMonthView().setShowCurrentWeek(false);
 
         // Customize the default entry factory to create entries with specific
         // properties
@@ -189,8 +193,24 @@ public class PTOCalculatorApp extends Application {
     }
 
     public List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
-        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(startDate, endDate, ZoneId.systemDefault());
-        List<Entry<?>> entries = entriesMap.values().stream().flatMap(List::stream).collect(Collectors.toList());
+        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
+                startDate,
+                endDate,
+                calendarView.getZoneId());
+        List<Entry<?>> entries = entriesMap.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        return entries;
+    }
+
+    public List<Entry<?>> getFutureEntries() {
+        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
+                LocalDate.now(),
+                LocalDate.MAX,
+                calendarView.getZoneId());
+        List<Entry<?>> entries = entriesMap.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
         return entries;
     }
 
@@ -199,8 +219,10 @@ public class PTOCalculatorApp extends Application {
                 // LocalDate.MIN results in 0 entries
                 LocalDate.of(-99999999, 1, 1),
                 LocalDate.MAX,
-                ZoneId.systemDefault());
-        List<Entry<?>> entries = entriesMap.values().stream().flatMap(List::stream).collect(Collectors.toList());
+                calendarView.getZoneId());
+        List<Entry<?>> entries = entriesMap.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
         return entries;
     }
 
@@ -221,6 +243,16 @@ public class PTOCalculatorApp extends Application {
                     + evt.getEntry().getInterval());
         } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
             System.out.println("Entry title changed to" + evt.getEntry().getTitle());
+        }
+    }
+
+    private void onClick(MouseEvent evt) {
+        if (evt.getButton().equals(MouseButton.PRIMARY)) {
+            MonthView monthView = calendarView.getMonthPage().getMonthView();
+            ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
+            if (date != null) {
+                System.out.println("Clicked on: " + date.toLocalDate());
+            }
         }
     }
 }
