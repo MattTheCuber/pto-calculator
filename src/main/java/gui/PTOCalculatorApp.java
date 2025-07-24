@@ -29,11 +29,18 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import model.PTODatabase;
+import model.UserSettings;
+import utilities.PTOCalculator;
 
 /**
  * Main class for the Paid Time Off Calculator GUI.
  */
 public class PTOCalculatorApp extends Application {
+    UserSettings userSettings;
+    PTOCalculator ptoCalculator;
+    PTODatabase ptoDatabase;
+
     CalendarView calendarView;
     Calendar<?> calendar;
 
@@ -48,6 +55,11 @@ public class PTOCalculatorApp extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // Initialize program classes
+        userSettings = new UserSettings();
+        ptoCalculator = new PTOCalculator(userSettings);
+        ptoDatabase = new PTODatabase();
+
         // Create the main calendar view
         calendarView = new CalendarView();
 
