@@ -56,12 +56,13 @@ import utilities.PTOCalculator;
  * Main class for the Paid Time Off Calculator GUI.
  */
 public class PTOCalculatorApp extends Application {
-    UserSettings userSettings;
-    PTOCalculator ptoCalculator;
-    PTODatabase ptoDatabase;
+    private UserSettings userSettings;
+    private PTOCalculator ptoCalculator;
+    private PTODatabase ptoDatabase;
 
-    CalendarView calendarView;
-    Calendar<?> calendar;
+    private Stage primaryStage;
+    private CalendarView calendarView;
+    private Calendar<?> calendar;
 
     /**
      * Main method to run the application.
@@ -176,6 +177,7 @@ public class PTOCalculatorApp extends Application {
         primaryStage.setHeight(1000);
         primaryStage.centerOnScreen();
         primaryStage.show();
+        this.primaryStage = primaryStage;
 
         calendarView.addEventHandler(RequestEvent.ANY, evt -> changeView(evt));
         updateToolbar();
@@ -313,6 +315,7 @@ public class PTOCalculatorApp extends Application {
         GridPane toolBarGridPane = (GridPane) borderPane.getTop();
         HBox leftToolBarBox = (HBox) toolBarGridPane.getChildren().get(0);
 
+        // If the settings button already exists, do not add it again
         if (leftToolBarBox.getChildren().get(0).getId().equals("settings-button")) {
             return;
         }
@@ -335,6 +338,7 @@ public class PTOCalculatorApp extends Application {
     }
 
     private void openSettings() {
-        System.out.println("Opening settings dialog...");
+        new SettingsDialog(primaryStage, userSettings).open();
+        // TODO: Update user settings or cancel
     }
 }

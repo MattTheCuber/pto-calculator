@@ -15,6 +15,7 @@ public class UserSettings {
 
     public UserSettings() {
         this.currentBalance = 0.0;
+        this.accrualPeriod = AccrualPeriod.WEEKLY;
     }
 
     public UserSettings(double accrualRate, AccrualPeriod accrualPeriod, double maxBalance, double carryOverLimit,
