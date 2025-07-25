@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.kordamp.ikonli.fontawesome.FontAwesome;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 import com.calendarfx.model.Calendar;
 import com.calendarfx.model.Calendar.Style;
 import com.calendarfx.model.CalendarEvent;
@@ -22,18 +25,26 @@ import com.calendarfx.view.CalendarView;
 import com.calendarfx.view.DateControl.CreateEntryParameter;
 import com.calendarfx.view.DateControl.EntryContextMenuParameter;
 import com.calendarfx.view.MonthView;
+import com.calendarfx.view.RequestEvent;
 import com.calendarfx.view.popover.EntryDetailsView;
 import com.calendarfx.view.popover.EntryHeaderView;
 import com.calendarfx.view.popover.EntryPopOverContentPane;
 
+import impl.com.calendarfx.view.CalendarViewSkin;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
@@ -107,6 +118,11 @@ public class PTOCalculatorApp extends Application {
         calendarView.getMonthPage().getMonthView().setShowWeekNumbers(false);
         calendarView.getMonthPage().getMonthView().setShowCurrentWeek(false);
 
+        // TODO: Hack the search panel to always be visible with all entries shown by
+        // default
+        calendarView.setShowSearchResultsTray(true);
+        calendarView.getSearchResultView();
+
         // Customize the default entry factory to create entries with specific
         // properties
         Callback<CreateEntryParameter, Entry<?>> defaultEntryFactory = calendarView.getEntryFactory();
@@ -160,6 +176,9 @@ public class PTOCalculatorApp extends Application {
         primaryStage.setHeight(1000);
         primaryStage.centerOnScreen();
         primaryStage.show();
+
+        calendarView.addEventHandler(RequestEvent.ANY, evt -> changeView(evt));
+        updateToolbar();
     }
 
     public void startUpdateThread() {
@@ -279,5 +298,43 @@ public class PTOCalculatorApp extends Application {
                 System.out.println("Balance at start of " + date.toLocalDate() + ": " + balance);
             }
         }
+    }
+
+    private void changeView(Event evt) {
+        if (evt instanceof ActionEvent) {
+            updateToolbar();
+        }
+    }
+
+    private void updateToolbar() {
+        // Fetch the toolbar from the calendar view
+        CalendarViewSkin skin = (CalendarViewSkin) calendarView.skinProperty().get();
+        BorderPane borderPane = (BorderPane) skin.getChildren().get(0);
+        GridPane toolBarGridPane = (GridPane) borderPane.getTop();
+        HBox leftToolBarBox = (HBox) toolBarGridPane.getChildren().get(0);
+
+        if (leftToolBarBox.getChildren().get(0).getId().equals("settings-button")) {
+            return;
+        }
+
+        // Build the settings button
+        // Reference:
+        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
+        FontIcon settingsIcon = new FontIcon(FontAwesome.COG);
+        settingsIcon.getStyleClass().addAll("button-icon", "settings-button-icon");
+
+        Button settingsButton = new Button();
+        settingsButton.setId("settings-button");
+        settingsButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        settingsButton.setOnAction(evt -> openSettings());
+        settingsButton.setMaxHeight(Double.MAX_VALUE);
+        settingsButton.setGraphic(settingsIcon);
+
+        // Add settings button
+        leftToolBarBox.getChildren().add(0, settingsButton);
+    }
+
+    private void openSettings() {
+        System.out.println("Opening settings dialog...");
     }
 }
