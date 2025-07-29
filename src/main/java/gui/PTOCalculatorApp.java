@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.controlsfx.control.PopOver;
 import org.kordamp.ikonli.fontawesome.FontAwesome;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -40,7 +41,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -295,14 +296,29 @@ public class PTOCalculatorApp extends Application {
 
     private void onClick(MouseEvent evt) {
         if (evt.getButton().equals(MouseButton.PRIMARY)) {
+            // TODO: Make this work with every view
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
             if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
                 double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
 
-                Tooltip tooltip = new Tooltip(String.format("Projected PTO Balance: %.2f", balance));
-                tooltip.setAutoHide(true);
-                tooltip.show(calendarView.getScene().getWindow(), evt.getScreenX(), evt.getScreenY());
+                PopOver popOver = new PopOver();
+                popOver.getRoot().getStylesheets().add(CalendarView.class.getResource("calendar.css").toExternalForm());
+                popOver.getRoot().getStyleClass().add("root");
+
+                Label label = new Label();
+                label.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
+                label.getStyleClass().add("no-entries-label");
+                popOver.setContentNode(label);
+
+                popOver.getStyleClass().add("date-popover");
+                popOver.setArrowIndent(4);
+                popOver.setDetachable(false);
+                popOver.setArrowLocation(PopOver.ArrowLocation.LEFT_CENTER);
+                popOver.setCornerRadius(4);
+                popOver.setHideOnEscape(true);
+                popOver.show(monthView, evt.getScreenX(), evt.getScreenY());
+                // TODO: Remove previous popover if it exists
             }
         }
     }
