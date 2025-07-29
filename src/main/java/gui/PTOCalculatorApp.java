@@ -40,6 +40,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -170,9 +171,9 @@ public class PTOCalculatorApp extends Application {
         });
 
         // Create the main application layout
-        // TODO: Set the application icon
         Scene scene = new Scene(calendarView);
         primaryStage.setTitle("Paid Time Off Planning Tool");
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon.png")));
         primaryStage.setScene(scene);
         primaryStage.setWidth(1300);
         primaryStage.setHeight(1000);

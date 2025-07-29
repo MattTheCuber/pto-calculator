@@ -8,6 +8,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
+import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -43,6 +44,7 @@ public class SettingsDialog {
         Scene scene = new Scene(vbox);
         stage = new Stage();
         stage.setTitle("PTO Configuration");
+        stage.getIcons().add(new Image(getClass().getResourceAsStream("/icon.png")));
         stage.initOwner(parent);
         stage.initModality(Modality.WINDOW_MODAL);
         stage.setScene(scene);
