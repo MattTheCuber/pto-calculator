@@ -7,9 +7,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.calendarfx.model.Entry;
+import com.calendarfx.model.Interval;
 
 import utilities.AccrualPeriod;
 
@@ -33,7 +36,6 @@ public class PTODatabase {
         createUserSettingsTable();
         createPTOEntriesTable();
         userId = getOrCreateUser();
-        System.out.println("User ID: " + userId);
     }
 
     private void createUsersTable() {
@@ -71,11 +73,12 @@ public class PTODatabase {
 
     private void createPTOEntriesTable() {
         String sql = "CREATE TABLE IF NOT EXISTS ptoEntries ("
-                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "id TEXT PRIMARY KEY,"
                 + "userId INTEGER NOT NULL,"
                 + "title TEXT NOT NULL,"
                 + "startDate TEXT NOT NULL,"
                 + "endDate TEXT NOT NULL,"
+                + "fullDay BOOLEAN NOT NULL,"
                 + "FOREIGN KEY(userId) REFERENCES users(id)"
                 + ");";
 
@@ -110,19 +113,41 @@ public class PTODatabase {
     }
 
     public void updateVacations(List<Entry<?>> entries) {
-        String sql = "INSERT OR REPLACE INTO ptoEntries (userId, title, startDate, endDate) VALUES (?, ?, ?, ?);";
+        String sql = "INSERT OR REPLACE INTO ptoEntries (id, userId, title, startDate, endDate, fullDay) VALUES (?, ?, ?, ?, ?, ?);";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             for (Entry<?> entry : entries) {
-                pstmt.setInt(1, userId);
-                pstmt.setString(2, entry.getTitle());
-                pstmt.setString(3, entry.getStartAsLocalDateTime().toString());
-                pstmt.setString(4, entry.getEndAsLocalDateTime().toString());
+                pstmt.setString(1, entry.getId());
+                pstmt.setInt(2, userId);
+                pstmt.setString(3, entry.getTitle());
+                pstmt.setString(4, entry.getStartAsLocalDateTime().toString());
+                pstmt.setString(5, entry.getEndAsLocalDateTime().toString());
+                pstmt.setBoolean(6, entry.isFullDay());
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    public List<Entry<?>> getVacations() {
+        String sql = "SELECT * FROM ptoEntries WHERE userId = ?;";
+        List<Entry<?>> entries = new ArrayList<>();
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Interval interval = new Interval(
+                        LocalDateTime.parse(rs.getString("startDate")),
+                        LocalDateTime.parse(rs.getString("endDate")));
+                Entry<Object> entry = new Entry<>(rs.getString("title"), interval, rs.getString("id"));
+                entry.setFullDay(rs.getBoolean("fullDay"));
+                entries.add(entry);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return entries;
     }
 
     public void updateUserSettings(UserSettings userSettings) {

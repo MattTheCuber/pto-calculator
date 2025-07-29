@@ -21,7 +21,6 @@ import com.calendarfx.model.Calendar.Style;
 import com.calendarfx.model.CalendarEvent;
 import com.calendarfx.model.CalendarSource;
 import com.calendarfx.model.Entry;
-import com.calendarfx.model.Interval;
 import com.calendarfx.view.CalendarView;
 import com.calendarfx.view.DateControl.CreateEntryParameter;
 import com.calendarfx.view.DateControl.EntryContextMenuParameter;
@@ -90,7 +89,7 @@ public class PTOCalculatorApp extends Application {
         userSettings.setCurrentBalance(20);
         userSettings.setAccrualRate(2.308);
         userSettings.setAccrualPeriod(AccrualPeriod.WEEKLY);
-        System.out.println(userSettings);
+        System.out.println("Loaded User Settings: " + userSettings);
 
         // Create the main calendar view
         calendarView = new CalendarView();
@@ -103,7 +102,7 @@ public class PTOCalculatorApp extends Application {
         calendar.setStyle(Style.STYLE1);
 
         // Add the existing entries to the calendar
-        addEntries();
+        loadEntries();
 
         // Add listeners to handle calendar events
         calendar.addEventHandler(evt -> eventHandler(evt));
@@ -236,12 +235,10 @@ public class PTOCalculatorApp extends Application {
         updateTimeThread.start();
     }
 
-    private void addEntries() {
-        Interval interval1 = new Interval(LocalDate.of(2025, 7, 24), LocalTime.of(9, 0), LocalDate.of(2025, 7, 25),
-                LocalTime.of(17, 00));
-        Entry<Object> entry1 = new Entry<>("Vacation", interval1);
-        entry1.setFullDay(true);
-        calendar.addEntry(entry1);
+    private void loadEntries() {
+        List<Entry<?>> entries = ptoDatabase.getVacations();
+        calendar.addEntries(entries);
+        System.out.println("Loaded " + entries.size() + " entries from the database.");
     }
 
     public List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
@@ -309,6 +306,8 @@ public class PTOCalculatorApp extends Application {
             alert.setHeaderText("Not enough PTO balance");
             alert.setContentText("You will not have enough PTO balance to take this day off!");
             alert.showAndWait();
+        } else {
+            ptoDatabase.updateVacations(getAllEntries());
         }
 
         System.out.println("Number of entries: " + getAllEntries().size());
@@ -370,8 +369,6 @@ public class PTOCalculatorApp extends Application {
         if (dialog.wasSaved()) {
             dialog.applyTo(userSettings);
             ptoDatabase.updateUserSettings(userSettings);
-            System.out.println(userSettings);
-            System.out.println(ptoDatabase.getUserSettings());
             // TODO: Refresh UI and validate entries
         }
     }
