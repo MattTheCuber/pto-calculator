@@ -67,6 +67,9 @@ public class PTOCalculatorApp extends Application {
     private CalendarView calendarView;
     private Calendar<?> calendar;
 
+    PopOver balancePopOver;
+    Label balanceLabel;
+
     /**
      * Main method to run the application.
      * 
@@ -171,6 +174,21 @@ public class PTOCalculatorApp extends Application {
             contextMenu.getItems().remove(1);
             return contextMenu;
         });
+
+        // Balance popover
+        balanceLabel = new Label();
+        balanceLabel.getStyleClass().add("no-entries-label");
+        balancePopOver = new PopOver();
+        balancePopOver.getRoot().getStylesheets().add(CalendarView.class.getResource("calendar.css").toExternalForm());
+        balancePopOver.getRoot().getStyleClass().add("root");
+        balancePopOver.setContentNode(balanceLabel);
+        balancePopOver.getStyleClass().add("date-popover");
+        balancePopOver.setArrowIndent(4);
+        balancePopOver.setDetachable(false);
+        balancePopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_CENTER);
+        balancePopOver.setCornerRadius(4);
+        balancePopOver.setHideOnEscape(true);
+        balancePopOver.setAutoHide(true);
 
         // Create the main application layout
         Scene scene = new Scene(calendarView);
@@ -302,23 +320,8 @@ public class PTOCalculatorApp extends Application {
             if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
                 double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
 
-                PopOver popOver = new PopOver();
-                popOver.getRoot().getStylesheets().add(CalendarView.class.getResource("calendar.css").toExternalForm());
-                popOver.getRoot().getStyleClass().add("root");
-
-                Label label = new Label();
-                label.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
-                label.getStyleClass().add("no-entries-label");
-                popOver.setContentNode(label);
-
-                popOver.getStyleClass().add("date-popover");
-                popOver.setArrowIndent(4);
-                popOver.setDetachable(false);
-                popOver.setArrowLocation(PopOver.ArrowLocation.LEFT_CENTER);
-                popOver.setCornerRadius(4);
-                popOver.setHideOnEscape(true);
-                popOver.show(monthView, evt.getScreenX(), evt.getScreenY());
-                // TODO: Remove previous popover if it exists
+                balanceLabel.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
+                balancePopOver.show(monthView, evt.getScreenX(), evt.getScreenY());
             }
         }
     }
