@@ -20,6 +20,16 @@ public class SettingsDialog {
 
     private final Stage stage;
     private final VBox vbox;
+    private boolean saved = false;
+
+    private Spinner<Double> balanceSpinner;
+    private Spinner<Double> accrualRateSpinner;
+    private ComboBox<AccrualPeriod> accrualPeriodCombo;
+    private Spinner<Double> maxBalanceSpinner;
+    private CheckBox maxBalanceDisableCheck;
+    private Spinner<Double> carryOverSpinner;
+    private CheckBox carryOverDisableCheck;
+    private DatePicker expirationPicker;
 
     public SettingsDialog(Window parent, UserSettings userSettings) {
         vbox = new VBox();
@@ -40,7 +50,7 @@ public class SettingsDialog {
 
         // Current Balance
         Label balanceLabel = new Label("Current Balance:");
-        Spinner<Double> balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 0.25);
+        balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 0.25);
         balanceSpinner.setEditable(true);
 
         // Group current balance label and spinner
@@ -49,12 +59,11 @@ public class SettingsDialog {
 
         // Accrual Rate
         Label accrualRateLabel = new Label("Accrual Rate:");
-        Spinner<Double> accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.01);
+        accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.01);
         accrualRateSpinner.setEditable(true);
 
         // Accrual Period
-        Label accrualPeriodLabel = new Label("Accrual Period:");
-        ComboBox<AccrualPeriod> accrualPeriodCombo = new ComboBox<>();
+        accrualPeriodCombo = new ComboBox<>();
         accrualPeriodCombo.setConverter(new StringConverter<AccrualPeriod>() {
             @Override
             public String toString(AccrualPeriod period) {
@@ -71,16 +80,16 @@ public class SettingsDialog {
         accrualPeriodCombo.setValue(userSettings.getAccrualPeriod());
 
         // Group accrual fields
-        HBox accrualBox = new HBox(8, accrualRateLabel, accrualRateSpinner, accrualPeriodLabel, accrualPeriodCombo);
+        HBox accrualBox = new HBox(8, accrualRateLabel, accrualRateSpinner, accrualPeriodCombo);
         accrualBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         // Max Balance
         Label maxBalanceLabel = new Label("Max Balance:");
-        Spinner<Double> maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 0.25);
+        maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 0.25);
         maxBalanceSpinner.setEditable(true);
 
         // Disable max balance
-        CheckBox maxBalanceDisableCheck = new CheckBox("Disable");
+        maxBalanceDisableCheck = new CheckBox("Disable");
         maxBalanceDisableCheck.setSelected(userSettings.getMaxBalance() == 0.0);
         maxBalanceSpinner.setDisable(maxBalanceDisableCheck.isSelected());
         maxBalanceDisableCheck.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
@@ -94,15 +103,17 @@ public class SettingsDialog {
 
         // Carry Over Limit
         Label carryOverLabel = new Label("Carry Over Limit:");
-        Spinner<Double> carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 0.25);
+        carryOverLabel.setMinWidth(88);
+        carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 0.25);
         carryOverSpinner.setEditable(true);
 
         // Expiration Date
         Label expirationLabel = new Label("Expiration Date:");
-        DatePicker expirationPicker = new DatePicker(userSettings.getExpirationDate());
+        expirationLabel.setMinWidth(84);
+        expirationPicker = new DatePicker(userSettings.getExpirationDate());
 
         // Disable carry over
-        CheckBox carryOverDisableCheck = new CheckBox("Disable");
+        carryOverDisableCheck = new CheckBox("Disable");
         carryOverDisableCheck.setSelected(userSettings.getCarryOverLimit() == 0.0);
         carryOverSpinner.setDisable(carryOverDisableCheck.isSelected());
         expirationPicker.setDisable(carryOverDisableCheck.isSelected());
@@ -130,13 +141,32 @@ public class SettingsDialog {
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         buttonBox.setPadding(new javafx.geometry.Insets(8, 0, 0, 0));
 
-        cancelButton.setOnAction(event -> stage.close());
-        saveButton.setOnAction(event -> stage.close());
+        cancelButton.setOnAction(event -> {
+            saved = false;
+            stage.close();
+        });
+        saveButton.setOnAction(event -> {
+            saved = true;
+            stage.close();
+        });
 
         vbox.getChildren().add(buttonBox);
     }
 
     public void open() {
         stage.showAndWait();
+    }
+
+    public boolean wasSaved() {
+        return saved;
+    }
+
+    public void applyTo(UserSettings userSettings) {
+        userSettings.setCurrentBalance(balanceSpinner.getValue());
+        userSettings.setAccrualRate(accrualRateSpinner.getValue());
+        userSettings.setAccrualPeriod(accrualPeriodCombo.getValue());
+        userSettings.setMaxBalance(maxBalanceDisableCheck.isSelected() ? 0.0 : maxBalanceSpinner.getValue());
+        userSettings.setCarryOverLimit(carryOverDisableCheck.isSelected() ? 0.0 : carryOverSpinner.getValue());
+        userSettings.setExpirationDate(expirationPicker.getValue());
     }
 }

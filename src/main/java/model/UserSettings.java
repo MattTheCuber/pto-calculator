@@ -83,8 +83,8 @@ public class UserSettings {
      * @param maxBalance the maximum balance to set
      */
     public void setMaxBalance(double maxBalance) {
-        if (maxBalance <= 0) {
-            throw new IllegalArgumentException("Maximum balance must be greater than zero");
+        if (maxBalance < 0) {
+            throw new IllegalArgumentException("Maximum balance cannot be negative");
         }
 
         this.maxBalance = maxBalance;

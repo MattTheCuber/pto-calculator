@@ -309,6 +309,7 @@ public class PTOCalculatorApp extends Application {
     }
 
     private void updateToolbar() {
+        // TODO: Add current PTO balance
         // Fetch the toolbar from the calendar view
         CalendarViewSkin skin = (CalendarViewSkin) calendarView.skinProperty().get();
         BorderPane borderPane = (BorderPane) skin.getChildren().get(0);
@@ -338,7 +339,11 @@ public class PTOCalculatorApp extends Application {
     }
 
     private void openSettings() {
-        new SettingsDialog(primaryStage, userSettings).open();
-        // TODO: Update user settings or cancel
+        SettingsDialog dialog = new SettingsDialog(primaryStage, userSettings);
+        dialog.open();
+        if (dialog.wasSaved()) {
+            dialog.applyTo(userSettings);
+            // TODO: Refresh UI or recalculate PTO
+        }
     }
 }
