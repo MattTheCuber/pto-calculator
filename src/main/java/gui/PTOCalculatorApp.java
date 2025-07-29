@@ -51,7 +51,6 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
-import utilities.AccrualPeriod;
 import utilities.PTOCalculator;
 
 /**
@@ -82,14 +81,8 @@ public class PTOCalculatorApp extends Application {
     public void start(Stage primaryStage) throws Exception {
         // Initialize program classes
         ptoDatabase = new PTODatabase();
-        userSettings = ptoDatabase.getUserSettings();
+        userSettings = new UserSettings();
         ptoCalculator = new PTOCalculator(userSettings);
-
-        // TODO: Remove hardcoded values
-        userSettings.setCurrentBalance(20);
-        userSettings.setAccrualRate(2.308);
-        userSettings.setAccrualPeriod(AccrualPeriod.WEEKLY);
-        System.out.println("Loaded User Settings: " + userSettings);
 
         // Create the main calendar view
         calendarView = new CalendarView();
@@ -202,11 +195,18 @@ public class PTOCalculatorApp extends Application {
         primaryStage.show();
         this.primaryStage = primaryStage;
 
+        // Add the settings button to the toolbar
         calendarView.addEventHandler(RequestEvent.ANY, evt -> changeView(evt));
         updateToolbar();
+
+        // Load user settings from the database
+        loadUserSettings();
+
+        // Keep the current date and balance updated
+        startUpdateThread();
     }
 
-    public void startUpdateThread() {
+    private void startUpdateThread() {
         // Create a thread to update the calendar view time every 10 seconds
         Thread updateTimeThread = new Thread("Calendar: Update Time Thread") {
             @Override
@@ -235,16 +235,25 @@ public class PTOCalculatorApp extends Application {
         updateTimeThread.start();
     }
 
+    private void loadUserSettings() {
+        LocalDate lastUpdate = ptoDatabase.getUserSettings(userSettings);
+        if (lastUpdate != null && lastUpdate.isBefore(LocalDate.now())) {
+            userSettings.setCurrentBalance(ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate)));
+            ptoDatabase.updateUserSettings(userSettings);
+        }
+        System.out.println("Loaded User Settings: " + userSettings);
+    }
+
     private void loadEntries() {
         List<Entry<?>> entries = ptoDatabase.getVacations();
         calendar.addEntries(entries);
         System.out.println("Loaded " + entries.size() + " entries from the database.");
     }
 
-    public List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
+    private List<Entry<?>> getDateEntries(LocalDate startDate) {
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 startDate,
-                endDate,
+                LocalDate.MAX,
                 calendarView.getZoneId());
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
@@ -253,7 +262,7 @@ public class PTOCalculatorApp extends Application {
         return entries;
     }
 
-    public List<Entry<?>> getFutureEntries() {
+    private List<Entry<?>> getFutureEntries() {
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 LocalDate.now(),
                 LocalDate.MAX,
@@ -265,7 +274,7 @@ public class PTOCalculatorApp extends Application {
         return entries;
     }
 
-    public List<Entry<?>> getAllEntries() {
+    private List<Entry<?>> getAllEntries() {
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 // LocalDate.MIN results in 0 entries
                 LocalDate.of(-99999999, 1, 1),
@@ -299,6 +308,7 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
 
+        // TODO: Make this only incluede entries up to the entry date
         if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), getFutureEntries())) {
             evt.getEntry().setCalendar(null);
             Alert alert = new Alert(Alert.AlertType.WARNING);

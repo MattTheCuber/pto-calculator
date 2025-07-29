@@ -171,26 +171,25 @@ public class PTODatabase {
         }
     }
 
-    public UserSettings getUserSettings() {
+    public LocalDate getUserSettings(UserSettings userSettings) {
         String sql = "SELECT * FROM userSettings WHERE userId = ?;";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                System.out.println("Retrieved user settings: " + rs.getDouble("maxBalance"));
                 String expirationDateStr = rs.getString("expirationDate");
-                // TODO: Handle last update
-                return new UserSettings(
-                        rs.getDouble("accrualRate"),
-                        AccrualPeriod.values()[rs.getInt("accrualPeriod")],
-                        rs.getDouble("maxBalance"),
-                        rs.getDouble("carryOverLimit"),
-                        expirationDateStr != null ? LocalDate.parse(expirationDateStr) : null,
-                        rs.getDouble("currentBalance"));
+                userSettings.setCurrentBalance(rs.getDouble("currentBalance"));
+                userSettings.setAccrualRate(rs.getDouble("accrualRate"));
+                userSettings.setAccrualPeriod(AccrualPeriod.values()[rs.getInt("accrualPeriod")]);
+                userSettings.setMaxBalance(rs.getDouble("maxBalance"));
+                userSettings.setCarryOverLimit(rs.getDouble("carryOverLimit"));
+                userSettings.setExpirationDate(expirationDateStr != null ? LocalDate.parse(expirationDateStr) : null);
+
+                return LocalDate.parse(rs.getString("lastUpdate"));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
-        return new UserSettings();
+        return null;
     }
 }

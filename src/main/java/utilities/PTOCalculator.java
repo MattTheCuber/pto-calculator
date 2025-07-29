@@ -23,21 +23,7 @@ public class PTOCalculator {
 
         // Compute project balance
         double daysSinceLastAccrual = date.toEpochDay() - LocalDate.now().toEpochDay();
-        double accruedPto = 0.0;
-        switch (accrualPeriod) {
-            case DAILY:
-                accruedPto = daysSinceLastAccrual * accrualRate;
-                break;
-            case WEEKLY:
-                accruedPto = (daysSinceLastAccrual / 7) * accrualRate;
-                break;
-            case MONTHLY:
-                accruedPto = (daysSinceLastAccrual / 30) * accrualRate;
-                break;
-            case YEARLY:
-                accruedPto = (daysSinceLastAccrual / 365) * accrualRate;
-                break;
-        }
+        double accruedPto = (daysSinceLastAccrual / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
         balance += accruedPto;
 
         // Remove hours for entries
@@ -72,5 +58,20 @@ public class PTOCalculator {
         } else {
             return true;
         }
+    }
+
+    public double computeAccruedBalance(LocalDate lastUpdate, List<Entry<?>> entries) {
+        LocalDate today = LocalDate.now();
+        if (lastUpdate.isAfter(today)) {
+            return userSettings.getCurrentBalance();
+        }
+
+        double daysBetween = ChronoUnit.DAYS.between(lastUpdate, today);
+        double accrualRate = userSettings.getAccrualRate();
+        AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
+        double accruedPTO = (daysBetween / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
+
+        System.out.println("Accrued PTO from " + lastUpdate + " to " + today + ": " + accruedPTO);
+        return userSettings.getCurrentBalance() + accruedPTO;
     }
 }
