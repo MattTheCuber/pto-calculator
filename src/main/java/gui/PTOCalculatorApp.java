@@ -170,6 +170,7 @@ public class PTOCalculatorApp extends Application {
         });
 
         // Create the main application layout
+        // TODO: Set the application icon
         Scene scene = new Scene(calendarView);
         primaryStage.setTitle("Paid Time Off Planning Tool");
         primaryStage.setScene(scene);

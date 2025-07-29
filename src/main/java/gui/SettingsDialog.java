@@ -1,6 +1,7 @@
 package gui;
 
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -17,10 +18,11 @@ import model.UserSettings;
 import utilities.AccrualPeriod;
 
 public class SettingsDialog {
+    private boolean saved = false;
+    private String validationError;
 
     private final Stage stage;
     private final VBox vbox;
-    private boolean saved = false;
 
     private Spinner<Double> balanceSpinner;
     private Spinner<Double> accrualRateSpinner;
@@ -30,11 +32,13 @@ public class SettingsDialog {
     private Spinner<Double> carryOverSpinner;
     private CheckBox carryOverDisableCheck;
     private DatePicker expirationPicker;
+    private Button saveButton;
 
     public SettingsDialog(Window parent, UserSettings userSettings) {
         vbox = new VBox();
 
         createControls(userSettings);
+        validateFields();
 
         Scene scene = new Scene(vbox);
         stage = new Stage();
@@ -52,6 +56,14 @@ public class SettingsDialog {
         Label balanceLabel = new Label("Current Balance:");
         balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 0.25);
         balanceSpinner.setEditable(true);
+        // TODO: Could make this more reactive by listening to on type instead of just
+        // value changes
+        balanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) {
+                balanceSpinner.getValueFactory().setValue(0.0);
+            }
+            validateFields();
+        });
 
         // Group current balance label and spinner
         HBox balanceBox = new HBox(8, balanceLabel, balanceSpinner);
@@ -61,6 +73,12 @@ public class SettingsDialog {
         Label accrualRateLabel = new Label("Accrual Rate:");
         accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.01);
         accrualRateSpinner.setEditable(true);
+        accrualRateSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) {
+                accrualRateSpinner.getValueFactory().setValue(0.0);
+            }
+            validateFields();
+        });
 
         // Accrual Period
         accrualPeriodCombo = new ComboBox<>();
@@ -87,6 +105,12 @@ public class SettingsDialog {
         Label maxBalanceLabel = new Label("Max Balance:");
         maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 0.25);
         maxBalanceSpinner.setEditable(true);
+        maxBalanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) {
+                maxBalanceSpinner.getValueFactory().setValue(0.0);
+            }
+            validateFields();
+        });
 
         // Disable max balance
         maxBalanceDisableCheck = new CheckBox("Disable");
@@ -94,6 +118,7 @@ public class SettingsDialog {
         maxBalanceSpinner.setDisable(maxBalanceDisableCheck.isSelected());
         maxBalanceDisableCheck.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             maxBalanceSpinner.setDisable(isSelected);
+            validateFields();
         });
 
         // Group max balance fields
@@ -106,11 +131,18 @@ public class SettingsDialog {
         carryOverLabel.setMinWidth(88);
         carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 0.25);
         carryOverSpinner.setEditable(true);
+        carryOverSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) {
+                carryOverSpinner.getValueFactory().setValue(0.0);
+            }
+            validateFields();
+        });
 
         // Expiration Date
         Label expirationLabel = new Label("Expiration Date:");
         expirationLabel.setMinWidth(84);
         expirationPicker = new DatePicker(userSettings.getExpirationDate());
+        expirationPicker.valueProperty().addListener((obs, oldVal, newVal) -> validateFields());
 
         // Disable carry over
         carryOverDisableCheck = new CheckBox("Disable");
@@ -120,6 +152,7 @@ public class SettingsDialog {
         carryOverDisableCheck.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             carryOverSpinner.setDisable(isSelected);
             expirationPicker.setDisable(isSelected);
+            validateFields();
         });
 
         // Group carry over fields
@@ -136,7 +169,7 @@ public class SettingsDialog {
 
         // Buttons
         Button cancelButton = new Button("Cancel");
-        Button saveButton = new Button("Save");
+        saveButton = new Button("Save");
         HBox buttonBox = new HBox(8, saveButton, cancelButton);
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         buttonBox.setPadding(new javafx.geometry.Insets(8, 0, 0, 0));
@@ -146,11 +179,49 @@ public class SettingsDialog {
             stage.close();
         });
         saveButton.setOnAction(event -> {
+            validateFields();
+            if (validationError != null) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Validation Error");
+                alert.setHeaderText(null);
+                alert.setContentText(validationError);
+                alert.showAndWait();
+                return;
+            }
             saved = true;
             stage.close();
         });
 
         vbox.getChildren().add(buttonBox);
+    }
+
+    private void validateFields() {
+        // Current Balance must be >= 0
+        if (balanceSpinner.getValue() == null || balanceSpinner.getValue() < 0) {
+            validationError = "Current Balance must be >= 0";
+        }
+        // Accrual Rate must be >= 0
+        else if (accrualRateSpinner.getValue() == null || accrualRateSpinner.getValue() < 0) {
+            validationError = "Accrual Rate must be >= 0";
+        }
+        // Max Balance must be > 0 if enabled
+        else if (!maxBalanceDisableCheck.isSelected()) {
+            if (maxBalanceSpinner.getValue() == null || maxBalanceSpinner.getValue() <= 0) {
+                validationError = "Max Balance must be > 0";
+            }
+        }
+        // Carry Over Limit must be >= 0 if enabled
+        else if (!carryOverDisableCheck.isSelected()) {
+            if (carryOverSpinner.getValue() == null || carryOverSpinner.getValue() < 0) {
+                validationError = "Carry Over Limit must be >= 0";
+            }
+            // Expiration date must be set if carry over is enabled
+            if (expirationPicker.getValue() == null) {
+                validationError = "Expiration Date must be set";
+            }
+        } else {
+            validationError = null; // Reset error
+        }
     }
 
     public void open() {
