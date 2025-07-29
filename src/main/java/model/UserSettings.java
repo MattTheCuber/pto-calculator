@@ -151,4 +151,16 @@ public class UserSettings {
 
         this.currentBalance = currentBalance;
     }
+
+    @Override
+    public String toString() {
+        return "UserSettings(" +
+                "currentBalance=" + currentBalance +
+                ", accrualRate=" + accrualRate +
+                ", accrualPeriod=" + accrualPeriod +
+                ", maxBalance=" + maxBalance +
+                ", carryOverLimit=" + carryOverLimit +
+                ", expirationDate=" + expirationDate +
+                ')';
+    }
 }

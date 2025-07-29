@@ -82,13 +82,15 @@ public class PTOCalculatorApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Initialize program classes
-        userSettings = new UserSettings();
+        ptoDatabase = new PTODatabase();
+        userSettings = ptoDatabase.getUserSettings();
+        ptoCalculator = new PTOCalculator(userSettings);
+
         // TODO: Remove hardcoded values
         userSettings.setCurrentBalance(20);
         userSettings.setAccrualRate(2.308);
         userSettings.setAccrualPeriod(AccrualPeriod.WEEKLY);
-        ptoCalculator = new PTOCalculator(userSettings);
-        ptoDatabase = new PTODatabase();
+        System.out.println(userSettings);
 
         // Create the main calendar view
         calendarView = new CalendarView();
@@ -367,7 +369,10 @@ public class PTOCalculatorApp extends Application {
         dialog.open();
         if (dialog.wasSaved()) {
             dialog.applyTo(userSettings);
-            // TODO: Refresh UI or recalculate PTO
+            ptoDatabase.updateUserSettings(userSettings);
+            System.out.println(userSettings);
+            System.out.println(ptoDatabase.getUserSettings());
+            // TODO: Refresh UI and validate entries
         }
     }
 }

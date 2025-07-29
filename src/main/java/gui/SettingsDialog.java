@@ -56,7 +56,7 @@ public class SettingsDialog {
 
         // Current Balance
         Label balanceLabel = new Label("Current Balance:");
-        balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 0.25);
+        balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 1);
         balanceSpinner.setEditable(true);
         // TODO: Could make this more reactive by listening to on type instead of just
         // value changes
@@ -73,7 +73,7 @@ public class SettingsDialog {
 
         // Accrual Rate
         Label accrualRateLabel = new Label("Accrual Rate:");
-        accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.01);
+        accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.1);
         accrualRateSpinner.setEditable(true);
         accrualRateSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
@@ -105,7 +105,7 @@ public class SettingsDialog {
 
         // Max Balance
         Label maxBalanceLabel = new Label("Max Balance:");
-        maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 0.25);
+        maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 1);
         maxBalanceSpinner.setEditable(true);
         maxBalanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
@@ -131,7 +131,7 @@ public class SettingsDialog {
         // Carry Over Limit
         Label carryOverLabel = new Label("Carry Over Limit:");
         carryOverLabel.setMinWidth(88);
-        carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 0.25);
+        carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 1);
         carryOverSpinner.setEditable(true);
         carryOverSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
@@ -200,27 +200,25 @@ public class SettingsDialog {
     private void validateFields() {
         // Current Balance must be >= 0
         if (balanceSpinner.getValue() == null || balanceSpinner.getValue() < 0) {
-            validationError = "Current Balance must be >= 0";
+            validationError = "Current Balance must be greater than or equal to 0";
         }
         // Accrual Rate must be >= 0
         else if (accrualRateSpinner.getValue() == null || accrualRateSpinner.getValue() < 0) {
-            validationError = "Accrual Rate must be >= 0";
+            validationError = "Accrual Rate must be greater than or equal to 0";
         }
         // Max Balance must be > 0 if enabled
-        else if (!maxBalanceDisableCheck.isSelected()) {
-            if (maxBalanceSpinner.getValue() == null || maxBalanceSpinner.getValue() <= 0) {
-                validationError = "Max Balance must be > 0";
-            }
+        else if (!maxBalanceDisableCheck.isSelected()
+                && (maxBalanceSpinner.getValue() == null || maxBalanceSpinner.getValue() <= 0)) {
+            validationError = "Max Balance must be greater than 0";
         }
-        // Carry Over Limit must be >= 0 if enabled
-        else if (!carryOverDisableCheck.isSelected()) {
-            if (carryOverSpinner.getValue() == null || carryOverSpinner.getValue() < 0) {
-                validationError = "Carry Over Limit must be >= 0";
-            }
-            // Expiration date must be set if carry over is enabled
-            if (expirationPicker.getValue() == null) {
-                validationError = "Expiration Date must be set";
-            }
+        // Carry Over Limit must be > 0 if enabled
+        else if (!carryOverDisableCheck.isSelected()
+                && (carryOverSpinner.getValue() == null || carryOverSpinner.getValue() <= 0)) {
+            validationError = "Carry Over Limit must be greater than 0";
+        }
+        // Expiration date must be set if carry over is enabled
+        else if (!carryOverDisableCheck.isSelected() && expirationPicker.getValue() == null) {
+            validationError = "Expiration Date must be set";
         } else {
             validationError = null; // Reset error
         }
