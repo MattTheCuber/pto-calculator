@@ -5,6 +5,7 @@
 package utilities;
 
 import java.time.LocalDate;
+import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -38,13 +39,16 @@ public class PTOCalculator {
      */
     public double computeBalanceAtDate(LocalDate date, List<Entry<?>> entries) {
         // Prepare variables
+        LocalDate today = LocalDate.now();
         double balance = userSettings.getCurrentBalance();
         double accrualRate = userSettings.getAccrualRate();
         AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
         double maxBalance = userSettings.getMaxBalance();
+        double carryOverLimit = userSettings.getCarryOverLimit();
+        MonthDay expirationDate = userSettings.getExpirationDate() == null ? null : userSettings.getExpirationDate();
 
         // Compute projected balance
-        double daysSinceLastAccrual = date.toEpochDay() - LocalDate.now().toEpochDay();
+        double daysSinceLastAccrual = date.toEpochDay() - today.toEpochDay();
         double accruedPto = (daysSinceLastAccrual / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
         balance += accruedPto;
 
@@ -59,9 +63,26 @@ public class PTOCalculator {
         }
 
         // Account for max balance
-        balance = Math.min(balance, maxBalance);
+        if (maxBalance > 0) {
+            balance = Math.min(balance, maxBalance);
+        }
 
-        // TODO: Account for carry over limit
+        // Account for carry over limit
+        if (carryOverLimit > 0 && expirationDate != null) {
+            // Calculate the next expiration date based on the current year
+            LocalDate nextExpirationDate = expirationDate.atYear(today.getYear());
+            if (nextExpirationDate.isBefore(today)) {
+                // If the expiration date has passed, set it to the next year
+                nextExpirationDate = nextExpirationDate.plusYears(1);
+            }
+
+            // If the date is on or after the next expiration date, apply carry over limit
+            if (!date.isBefore(nextExpirationDate)) {
+                // TODO: Don't set, instead subtract the difference since you will accrue more
+                // after the expiration date
+                balance = Math.min(balance, carryOverLimit);
+            }
+        }
 
         return balance;
     }
@@ -135,17 +156,37 @@ public class PTOCalculator {
         double accrualRate = userSettings.getAccrualRate();
         AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
         double maxBalance = userSettings.getMaxBalance();
+        double carryOverLimit = userSettings.getCarryOverLimit();
+        MonthDay expirationDate = userSettings.getExpirationDate() == null ? null : userSettings.getExpirationDate();
 
         // Calculate the accrued PTO based on the days between last update and today
         double daysBetween = ChronoUnit.DAYS.between(lastUpdate, today);
         double accruedPTO = (daysBetween / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
         balance += accruedPTO;
 
-        // Account for max balance
-        balance = Math.min(balance, maxBalance);
-
-        // TODO: Account for carry over limit
         // TODO: Account for passed vacation entries
+
+        // Account for max balance
+        if (maxBalance > 0) {
+            balance = Math.min(balance, maxBalance);
+        }
+
+        // Account for carry over limit
+        if (carryOverLimit > 0 && expirationDate != null) {
+            // Calculate the next expiration date based on the current year
+            LocalDate nextExpirationDate = expirationDate.atYear(lastUpdate.getYear());
+            if (nextExpirationDate.isBefore(lastUpdate)) {
+                // If the expiration date has passed, set it to the next year
+                nextExpirationDate = nextExpirationDate.plusYears(1);
+            }
+
+            // If today is on or after the next expiration date, apply carry over limit
+            if (!today.isBefore(nextExpirationDate)) {
+                // TODO: Don't set, instead subtract the difference since you will accrue more
+                // after the expiration date
+                balance = Math.min(balance, carryOverLimit);
+            }
+        }
 
         return balance;
     }
