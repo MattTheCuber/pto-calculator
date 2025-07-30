@@ -1,3 +1,7 @@
+// Paid Time Off Calculator
+// Matthew Vine
+// CSIS 643-D01 (Liberty University)
+
 package gui;
 
 import javafx.scene.Scene;
@@ -18,6 +22,9 @@ import javafx.util.StringConverter;
 import model.UserSettings;
 import utilities.AccrualPeriod;
 
+/**
+ * Dialog for configuring user settings.
+ */
 public class SettingsDialog {
     private boolean saved = false;
     private String validationError;
@@ -33,14 +40,26 @@ public class SettingsDialog {
     private Spinner<Double> carryOverSpinner;
     private CheckBox carryOverDisableCheck;
     private DatePicker expirationPicker;
-    private Button saveButton;
 
+    /**
+     * Creates a new SettingsDialog with the user settings.
+     * 
+     * @param parent       the parent window for this dialog
+     * @param userSettings the user settings to initialize the dialog with
+     */
     public SettingsDialog(Window parent, UserSettings userSettings) {
+        // Initialize the dialog layout
         vbox = new VBox();
+        vbox.setSpacing(16);
+        vbox.setPadding(new javafx.geometry.Insets(8));
 
+        // Create controls for user settings
         createControls(userSettings);
+
+        // Validate fields initially
         validateFields();
 
+        // Create the scene and stage
         Scene scene = new Scene(vbox);
         stage = new Stage();
         stage.setTitle("PTO Configuration");
@@ -50,10 +69,12 @@ public class SettingsDialog {
         stage.setScene(scene);
     }
 
+    /**
+     * Creates the controls for the settings dialog.
+     * 
+     * @param userSettings the user settings to initialize the controls with
+     */
     private void createControls(UserSettings userSettings) {
-        vbox.setSpacing(16);
-        vbox.setPadding(new javafx.geometry.Insets(8));
-
         // Current Balance
         Label balanceLabel = new Label("Current Balance:");
         balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 1);
@@ -162,41 +183,59 @@ public class SettingsDialog {
         carryOverBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         VBox carryOverContainer = new VBox(4, carryOverDisableCheck, carryOverBox);
 
+        // Create buttons
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setOnAction(event -> onCancel());
+        Button saveButton = new Button("Save");
+        saveButton.setOnAction(event -> onSave());
+
+        // Group buttons
+        HBox buttonBox = new HBox(8, saveButton, cancelButton);
+        buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        buttonBox.setPadding(new javafx.geometry.Insets(8, 0, 0, 0));
+
         // Add controls to vbox
         vbox.getChildren().addAll(
                 balanceBox,
                 accrualBox,
                 maxBalanceContainer,
-                carryOverContainer);
-
-        // Buttons
-        Button cancelButton = new Button("Cancel");
-        saveButton = new Button("Save");
-        HBox buttonBox = new HBox(8, saveButton, cancelButton);
-        buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-        buttonBox.setPadding(new javafx.geometry.Insets(8, 0, 0, 0));
-
-        cancelButton.setOnAction(event -> {
-            saved = false;
-            stage.close();
-        });
-        saveButton.setOnAction(event -> {
-            validateFields();
-            if (validationError != null) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Validation Error");
-                alert.setHeaderText(null);
-                alert.setContentText(validationError);
-                alert.showAndWait();
-                return;
-            }
-            saved = true;
-            stage.close();
-        });
-
-        vbox.getChildren().add(buttonBox);
+                carryOverContainer,
+                buttonBox);
     }
 
+    /**
+     * Handles the cancel action.
+     */
+    private void onCancel() {
+        saved = false;
+        stage.close();
+    }
+
+    /**
+     * Handles the save action.
+     */
+    private void onSave() {
+        // Validate fields before saving
+        validateFields();
+
+        // If there is a validation error, cancel and show an alert to the user
+        if (validationError != null) {
+            // Show an alert with the validation error
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Validation Error");
+            alert.setHeaderText(null);
+            alert.setContentText(validationError);
+            alert.showAndWait();
+        } else {
+            saved = true;
+            stage.close();
+        }
+    }
+
+    /**
+     * Validates the fields in the settings dialog. Sets validationError if any
+     * field is invalid.
+     */
     private void validateFields() {
         // Current Balance must be >= 0
         if (balanceSpinner.getValue() == null || balanceSpinner.getValue() < 0) {
@@ -224,14 +263,27 @@ public class SettingsDialog {
         }
     }
 
+    /**
+     * Opens the settings dialog and waits for it to close.
+     */
     public void open() {
         stage.showAndWait();
     }
 
+    /**
+     * Returns whether the settings were saved.
+     * 
+     * @return true if settings were saved, false otherwise
+     */
     public boolean wasSaved() {
         return saved;
     }
 
+    /**
+     * Applies the settings from this dialog to the provided UserSettings object.
+     * 
+     * @param userSettings the UserSettings object to apply the settings to
+     */
     public void applyTo(UserSettings userSettings) {
         userSettings.setCurrentBalance(balanceSpinner.getValue());
         userSettings.setAccrualRate(accrualRateSpinner.getValue());

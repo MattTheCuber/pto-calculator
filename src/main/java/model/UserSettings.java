@@ -1,23 +1,43 @@
+// Paid Time Off Calculator
+// Matthew Vine
+// CSIS 643-D01 (Liberty University)
+
 package model;
 
 import java.time.LocalDate;
 
 import utilities.AccrualPeriod;
 
+/**
+ * Represents user settings for the Paid Time Off Planning Tool.
+ */
 public class UserSettings {
     double accrualRate;
     AccrualPeriod accrualPeriod;
-    // Add acrrual compounding period
+    // TODO: Add accrual compounding period
     double maxBalance;
     double carryOverLimit;
     LocalDate expirationDate;
     double currentBalance;
 
+    /**
+     * Default constructor initializing with default values.
+     */
     public UserSettings() {
         this.currentBalance = 0.0;
         this.accrualPeriod = AccrualPeriod.WEEKLY;
     }
 
+    /**
+     * Constructor to initialize user settings with specified values.
+     * 
+     * @param accrualRate    the rate at which PTO is accrued
+     * @param accrualPeriod  the period for accruing PTO
+     * @param maxBalance     the maximum balance of PTO allowed
+     * @param carryOverLimit the limit for carrying over unused PTO
+     * @param expirationDate the date when PTO expires
+     * @param currentBalance the current balance of PTO
+     */
     public UserSettings(double accrualRate, AccrualPeriod accrualPeriod, double maxBalance, double carryOverLimit,
             LocalDate expirationDate, double currentBalance) {
         this.accrualRate = accrualRate;
@@ -41,6 +61,7 @@ public class UserSettings {
      * Sets the accrual rate.
      * 
      * @param accrualRate the accrual rate to set
+     * @throws IllegalArgumentException if the accrual rate is negative
      */
     public void setAccrualRate(double accrualRate) {
         if (accrualRate < 0) {
@@ -81,6 +102,7 @@ public class UserSettings {
      * Sets the maximum balance.
      * 
      * @param maxBalance the maximum balance to set
+     * @throws IllegalArgumentException if the maximum balance is negative
      */
     public void setMaxBalance(double maxBalance) {
         if (maxBalance < 0) {
@@ -103,6 +125,7 @@ public class UserSettings {
      * Sets the carry over limit.
      * 
      * @param carryOverLimit the carry over limit to set
+     * @throws IllegalArgumentException if the carry over limit is negative
      */
     public void setCarryOverLimit(double carryOverLimit) {
         if (carryOverLimit < 0) {
@@ -143,6 +166,7 @@ public class UserSettings {
      * Sets the current balance.
      * 
      * @param currentBalance the current balance to set
+     * @throws IllegalArgumentException if the current balance is negative
      */
     public void setCurrentBalance(double currentBalance) {
         if (currentBalance < 0) {
@@ -152,6 +176,11 @@ public class UserSettings {
         this.currentBalance = currentBalance;
     }
 
+    /**
+     * Returns a string representation of the user settings.
+     * 
+     * @return a string containing the user settings
+     */
     @Override
     public String toString() {
         return "UserSettings(" +

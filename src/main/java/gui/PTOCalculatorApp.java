@@ -1,7 +1,6 @@
 // Paid Time Off Calculator
 // Matthew Vine
 // CSIS 643-D01 (Liberty University)
-// July 23, 2025
 
 package gui;
 
@@ -54,7 +53,7 @@ import model.UserSettings;
 import utilities.PTOCalculator;
 
 /**
- * Main class for the Paid Time Off Calculator GUI.
+ * Main class for the Paid Time Off Planning Tool providing the user interface.
  */
 public class PTOCalculatorApp extends Application {
     private UserSettings userSettings;
@@ -77,6 +76,12 @@ public class PTOCalculatorApp extends Application {
         launch();
     }
 
+    /**
+     * Starts the application and initializes the main calendar view.
+     * 
+     * @param primaryStage The primary stage for the application.
+     * @throws Exception If an error occurs during initialization.
+     */
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Initialize program classes
@@ -206,6 +211,9 @@ public class PTOCalculatorApp extends Application {
         startUpdateThread();
     }
 
+    /**
+     * Continuously updates the calendar and current balance.
+     */
     private void startUpdateThread() {
         // Create a thread to update the calendar view time every 10 seconds
         Thread updateTimeThread = new Thread("Calendar: Update Time Thread") {
@@ -235,26 +243,52 @@ public class PTOCalculatorApp extends Application {
         updateTimeThread.start();
     }
 
+    /**
+     * Loads user settings from the database and computes accrued PTO.
+     */
     private void loadUserSettings() {
+        // Load user settings from the database
         LocalDate lastUpdate = ptoDatabase.getUserSettings(userSettings);
+
+        // If the last update date is before today
         if (lastUpdate != null && lastUpdate.isBefore(LocalDate.now())) {
-            userSettings.setCurrentBalance(ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate)));
+            // Compute the accrued PTO since the last update
+            double accruedPTO = ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate));
+            // Update the current balance and user settings
+            userSettings.setCurrentBalance(userSettings.getCurrentBalance() + accruedPTO);
+            // Update the last update date to today
             ptoDatabase.updateUserSettings(userSettings);
+            // Print the accrued PTO
+            System.out.println("Accrued PTO since " + lastUpdate + ": " + accruedPTO);
         }
+
+        // Print the loaded user settings
         System.out.println("Loaded User Settings: " + userSettings);
     }
 
+    /**
+     * Loads existing vacation entries from the database and adds them to the
+     * calendar.
+     */
     private void loadEntries() {
         List<Entry<?>> entries = ptoDatabase.getVacations();
         calendar.addEntries(entries);
         System.out.println("Loaded " + entries.size() + " entries from the database.");
     }
 
+    /**
+     * Gets all entries starting from a specific date.
+     * 
+     * @param startDate The date from which to start fetching entries.
+     * @return A list of entries starting from the specified date.
+     */
     private List<Entry<?>> getDateEntries(LocalDate startDate) {
+        // Fetch all entries from the calendar starting from the specified date
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 startDate,
                 LocalDate.MAX,
                 calendarView.getZoneId());
+        // Flatten the map values into a list and remove duplicates
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
                 .distinct()
@@ -262,11 +296,18 @@ public class PTOCalculatorApp extends Application {
         return entries;
     }
 
+    /**
+     * Gets all future entries in the calendar.
+     * 
+     * @return A list of future entries.
+     */
     private List<Entry<?>> getFutureEntries() {
+        // Fetch all entries from the calendar starting from today
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 LocalDate.now(),
                 LocalDate.MAX,
                 calendarView.getZoneId());
+        // Flatten the map values into a list and remove duplicates
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
                 .distinct()
@@ -274,12 +315,19 @@ public class PTOCalculatorApp extends Application {
         return entries;
     }
 
+    /**
+     * Gets all entries in the calendar.
+     * 
+     * @return A list of all entries in the calendar.
+     */
     private List<Entry<?>> getAllEntries() {
+        // Fetch all entries from the calendar
         Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
                 // LocalDate.MIN results in 0 entries
                 LocalDate.of(-99999999, 1, 1),
                 LocalDate.MAX,
                 calendarView.getZoneId());
+        // Flatten the map values into a list and remove duplicates
         List<Entry<?>> entries = entriesMap.values().stream()
                 .flatMap(List::stream)
                 .distinct()
@@ -287,8 +335,13 @@ public class PTOCalculatorApp extends Application {
         return entries;
     }
 
+    /**
+     * Handles calendar events for when an entry changes.
+     * 
+     * @param evt The calendar event to handle.
+     */
     private void eventHandler(CalendarEvent evt) {
-        // TODO: Save entries to database
+        // Added or removed entries
         if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
             if (evt.getEntry().getCalendar() != null) {
                 // TODO: Restrict to weekdays
@@ -296,53 +349,83 @@ public class PTOCalculatorApp extends Application {
             } else {
                 System.out.println("Removed entry " + evt.getEntry().getTitle());
             }
-
-        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
+        }
+        // Entry full day property changes
+        else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + (evt.getEntry().isFullDay() ? "full day" : "partial day"));
-        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+        }
+        // Entry interval property changes
+        else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
             // TODO: Enforce configurable increments (e.g., 15 minutes or 8 hours)
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + evt.getEntry().getInterval());
-        } else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
+        }
+        // Entry title property changes
+        else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
             System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
 
-        // TODO: Make this only incluede entries up to the entry date
+        // If the entry is invalid
+        // TODO: Make this only include entries up to the entry date
         if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), getFutureEntries())) {
+            // Remove the entry from the calendar
             evt.getEntry().setCalendar(null);
+
+            // Show an alert to the user
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Invalid Entry");
             alert.setHeaderText("Not enough PTO balance");
             alert.setContentText("You will not have enough PTO balance to take this day off!");
             alert.showAndWait();
         } else {
+            // Otherwise, update the database with the current entries
             ptoDatabase.updateVacations(getAllEntries());
         }
-
-        System.out.println("Number of entries: " + getAllEntries().size());
     }
 
+    /**
+     * Handles mouse clicks on the calendar view to show the projected PTO balance.
+     * 
+     * @param evt The mouse event that occurred.
+     */
     private void onClick(MouseEvent evt) {
+        // If the left mouse button was clicked
         if (evt.getButton().equals(MouseButton.PRIMARY)) {
+            // Get the month view and the date at the clicked position
             // TODO: Make this work with every view
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
+
+            // If the date is in the future
             if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
+                // Compute the projected PTO balance at the start of the date
                 double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
 
+                // Show the balance in the popover
                 balanceLabel.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
                 balancePopOver.show(monthView, evt.getScreenX(), evt.getScreenY());
             }
         }
     }
 
+    /**
+     * Handle events that change the view, such as switching between month and week
+     * views.
+     * 
+     * @param evt The event that triggered the view change.
+     */
     private void changeView(Event evt) {
+        // If the event is an action event (calendar switching), update the toolbar
         if (evt instanceof ActionEvent) {
             updateToolbar();
         }
     }
 
+    /**
+     * Updates the toolbar with the current PTO balance and other relevant
+     * information.
+     */
     private void updateToolbar() {
         // TODO: Add current PTO balance
         // Fetch the toolbar from the calendar view
@@ -361,7 +444,6 @@ public class PTOCalculatorApp extends Application {
         // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
         FontIcon settingsIcon = new FontIcon(FontAwesome.COG);
         settingsIcon.getStyleClass().addAll("button-icon", "settings-button-icon");
-
         Button settingsButton = new Button();
         settingsButton.setId("settings-button");
         settingsButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
@@ -373,9 +455,15 @@ public class PTOCalculatorApp extends Application {
         leftToolBarBox.getChildren().add(0, settingsButton);
     }
 
+    /**
+     * Opens the settings dialog to allow the user to configure their PTO settings.
+     */
     private void openSettings() {
+        // Create and open the settings dialog
         SettingsDialog dialog = new SettingsDialog(primaryStage, userSettings);
         dialog.open();
+
+        // If the dialog was saved, apply the changes to user settings
         if (dialog.wasSaved()) {
             dialog.applyTo(userSettings);
             ptoDatabase.updateUserSettings(userSettings);
