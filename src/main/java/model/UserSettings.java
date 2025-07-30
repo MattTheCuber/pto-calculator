@@ -4,7 +4,7 @@
 
 package model;
 
-import java.time.LocalDate;
+import java.time.MonthDay;
 
 import utilities.AccrualPeriod;
 
@@ -17,7 +17,7 @@ public class UserSettings {
     // TODO: Add accrual compounding period
     double maxBalance;
     double carryOverLimit;
-    LocalDate expirationDate;
+    MonthDay expirationDate;
     double currentBalance;
 
     /**
@@ -38,8 +38,13 @@ public class UserSettings {
      * @param expirationDate the date when PTO expires
      * @param currentBalance the current balance of PTO
      */
-    public UserSettings(double accrualRate, AccrualPeriod accrualPeriod, double maxBalance, double carryOverLimit,
-            LocalDate expirationDate, double currentBalance) {
+    public UserSettings(
+            double accrualRate,
+            AccrualPeriod accrualPeriod,
+            double maxBalance,
+            double carryOverLimit,
+            MonthDay expirationDate,
+            double currentBalance) {
         this.accrualRate = accrualRate;
         this.accrualPeriod = accrualPeriod;
         this.maxBalance = maxBalance;
@@ -140,7 +145,7 @@ public class UserSettings {
      * 
      * @return the expiration date
      */
-    public LocalDate getExpirationDate() {
+    public MonthDay getExpirationDate() {
         return expirationDate;
     }
 
@@ -149,7 +154,7 @@ public class UserSettings {
      * 
      * @param expirationDate the expiration date to set
      */
-    public void setExpirationDate(LocalDate expirationDate) {
+    public void setExpirationDate(MonthDay expirationDate) {
         this.expirationDate = expirationDate;
     }
 

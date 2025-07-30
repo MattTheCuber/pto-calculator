@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -257,7 +258,7 @@ public class PTODatabase {
                 userSettings.setAccrualPeriod(AccrualPeriod.values()[rs.getInt("accrualPeriod")]);
                 userSettings.setMaxBalance(rs.getDouble("maxBalance"));
                 userSettings.setCarryOverLimit(rs.getDouble("carryOverLimit"));
-                userSettings.setExpirationDate(expirationDateStr != null ? LocalDate.parse(expirationDateStr) : null);
+                userSettings.setExpirationDate(expirationDateStr != null ? MonthDay.parse(expirationDateStr) : null);
 
                 // Return the last update
                 return LocalDate.parse(rs.getString("lastUpdate"));

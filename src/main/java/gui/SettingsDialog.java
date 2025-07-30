@@ -4,6 +4,9 @@
 
 package gui;
 
+import java.time.LocalDate;
+import java.time.MonthDay;
+
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -164,7 +167,9 @@ public class SettingsDialog {
         // Expiration Date
         Label expirationLabel = new Label("Expiration Date:");
         expirationLabel.setMinWidth(84);
-        expirationPicker = new DatePicker(userSettings.getExpirationDate());
+        LocalDate expirationDate = userSettings.getExpirationDate() == null ? null
+                : userSettings.getExpirationDate().atYear(LocalDate.now().getYear());
+        expirationPicker = new DatePicker(expirationDate);
         expirationPicker.valueProperty().addListener((obs, oldVal, newVal) -> validateFields());
 
         // Disable carry over
@@ -290,6 +295,7 @@ public class SettingsDialog {
         userSettings.setAccrualPeriod(accrualPeriodCombo.getValue());
         userSettings.setMaxBalance(maxBalanceDisableCheck.isSelected() ? 0.0 : maxBalanceSpinner.getValue());
         userSettings.setCarryOverLimit(carryOverDisableCheck.isSelected() ? 0.0 : carryOverSpinner.getValue());
-        userSettings.setExpirationDate(expirationPicker.getValue());
+        userSettings.setExpirationDate(
+                expirationPicker.getValue() == null ? null : MonthDay.from(expirationPicker.getValue()));
     }
 }
