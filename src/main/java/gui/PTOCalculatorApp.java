@@ -253,13 +253,14 @@ public class PTOCalculatorApp extends Application {
         // If the last update date is before today
         if (lastUpdate != null && lastUpdate.isBefore(LocalDate.now())) {
             // Compute the accrued PTO since the last update
-            double accruedPTO = ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate));
+            double newBalance = ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate));
             // Update the current balance and user settings
-            userSettings.setCurrentBalance(userSettings.getCurrentBalance() + accruedPTO);
+            userSettings.setCurrentBalance(newBalance);
             // Update the last update date to today
             ptoDatabase.updateUserSettings(userSettings);
             // Print the accrued PTO
-            System.out.println("Accrued PTO since " + lastUpdate + ": " + accruedPTO);
+            double accrued = (userSettings.getCurrentBalance() - newBalance);
+            System.out.println("Accrued PTO since " + lastUpdate + ": " + accrued);
         }
 
         // Print the loaded user settings
@@ -367,6 +368,7 @@ public class PTOCalculatorApp extends Application {
         }
 
         // If the entry is invalid
+        // TODO: Revert entry changes if not new
         // TODO: Make this only include entries up to the entry date
         if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), getFutureEntries())) {
             // Remove the entry from the calendar

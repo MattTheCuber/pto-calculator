@@ -41,6 +41,7 @@ public class PTOCalculator {
         double balance = userSettings.getCurrentBalance();
         double accrualRate = userSettings.getAccrualRate();
         AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
+        double maxBalance = userSettings.getMaxBalance();
 
         // Compute projected balance
         double daysSinceLastAccrual = date.toEpochDay() - LocalDate.now().toEpochDay();
@@ -56,6 +57,11 @@ public class PTOCalculator {
                 balance -= entry.getDuration().toHours();
             }
         }
+
+        // Account for max balance
+        balance = Math.min(balance, maxBalance);
+
+        // TODO: Account for carry over limit
 
         return balance;
     }
@@ -125,13 +131,22 @@ public class PTOCalculator {
         }
 
         // Prepare variables
+        double balance = userSettings.getCurrentBalance();
         double accrualRate = userSettings.getAccrualRate();
         AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
+        double maxBalance = userSettings.getMaxBalance();
 
         // Calculate the accrued PTO based on the days between last update and today
         double daysBetween = ChronoUnit.DAYS.between(lastUpdate, today);
         double accruedPTO = (daysBetween / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
+        balance += accruedPTO;
 
-        return accruedPTO;
+        // Account for max balance
+        balance = Math.min(balance, maxBalance);
+
+        // TODO: Account for carry over limit
+        // TODO: Account for passed vacation entries
+
+        return balance;
     }
 }
