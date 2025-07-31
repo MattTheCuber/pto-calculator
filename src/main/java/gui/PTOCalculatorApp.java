@@ -50,6 +50,7 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
+import utilities.CustomCalendarView;
 import utilities.PTOCalculator;
 
 /**
@@ -90,7 +91,7 @@ public class PTOCalculatorApp extends Application {
         ptoCalculator = new PTOCalculator(userSettings);
 
         // Create the main calendar view
-        calendarView = new CalendarView();
+        calendarView = new CustomCalendarView();
 
         // Set the current date and time for the calendar view
         calendarView.setRequestedTime(LocalTime.now());
@@ -123,11 +124,6 @@ public class PTOCalculatorApp extends Application {
         calendarView.showMonthPage();
         calendarView.getMonthPage().getMonthView().setShowWeekNumbers(false);
         calendarView.getMonthPage().getMonthView().setShowCurrentWeek(false);
-
-        // TODO: Hack the search panel to always be visible with all entries shown by
-        // default
-        calendarView.setShowSearchResultsTray(true);
-        calendarView.getSearchResultView();
 
         // Customize the default entry factory to create entries with specific
         // properties
@@ -209,6 +205,11 @@ public class PTOCalculatorApp extends Application {
 
         // Keep the current date and balance updated
         startUpdateThread();
+
+        // Keep the entry "search" panel always visible
+        calendarView.showSearchResultsTrayProperty().unbind();
+        calendarView.setShowSearchResultsTray(true);
+        calendarView.getSearchField().setText("Vacation");
     }
 
     /**

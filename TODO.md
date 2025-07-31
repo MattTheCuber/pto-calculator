@@ -8,3 +8,10 @@
 8. [ ] Package (see here: https://stackoverflow.com/questions/574594/how-can-i-create-an-executable-runnable-jar-with-dependencies-using-maven)
 
 GitHub CI (testing, releases, etc.)
+
+## Musts
+
+- [ ] Fix double click to add entry behavior
+- [ ] List of entries
+- [ ] Make PTO balance pop over work in all views OR disable all views except month
+- [ ] Revert entry changes if changed to invalid state instead of deleting the entry
