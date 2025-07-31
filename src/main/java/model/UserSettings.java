@@ -183,19 +183,19 @@ public class UserSettings {
     }
 
     /**
-     * Calculates the next expiration date based on the current year.
+     * Calculates the next expiration date given a start date.
      * 
+     * @param startDate the date to calculate from
      * @return the next expiration date, or null if no expiration date is set
      */
-    public LocalDate getNextExpirationDate() {
-        LocalDate today = LocalDate.now();
+    public LocalDate getNextExpirationDate(LocalDate startDate) {
         if (expirationDate == null) {
             return null;
         }
 
         // Calculate the next expiration date based on the current year
-        LocalDate nextExpirationDate = expirationDate.atYear(today.getYear());
-        if (nextExpirationDate.isBefore(today)) {
+        LocalDate nextExpirationDate = expirationDate.atYear(startDate.getYear());
+        if (nextExpirationDate.isBefore(startDate)) {
             // If the expiration date has passed, set it to the next year
             nextExpirationDate = nextExpirationDate.plusYears(1);
         }

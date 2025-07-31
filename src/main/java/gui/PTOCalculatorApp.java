@@ -253,7 +253,8 @@ public class PTOCalculatorApp extends Application {
         // If the last update date is before today
         if (lastUpdate != null && lastUpdate.isBefore(LocalDate.now())) {
             // Compute the accrued PTO since the last update
-            double newBalance = ptoCalculator.computeAccruedBalance(lastUpdate, getDateEntries(lastUpdate));
+            List<Entry<?>> entries = getDateEntries(lastUpdate);
+            double newBalance = ptoCalculator.computeAccruedBalance(lastUpdate, LocalDate.now(), entries);
             // Update the current balance and user settings
             userSettings.setCurrentBalance(newBalance);
             // Update the last update date to today
