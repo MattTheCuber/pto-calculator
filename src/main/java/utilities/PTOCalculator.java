@@ -50,7 +50,7 @@ public class PTOCalculator {
         LocalDate nextExpirationDate = userSettings.getNextExpirationDate(startDate);
         if (carryOverLimit > 0 && nextExpirationDate != null && !targetDate.isBefore(nextExpirationDate)) {
             // Add accrued PTO until the next expiration date
-            balance += computePTOAccrualBetweenDates(startDate, nextExpirationDate, entries);
+            balance += computeAccrualBetweenDates(startDate, nextExpirationDate, entries);
 
             // Account for max balance
             if (maxBalance > 0) {
@@ -61,10 +61,10 @@ public class PTOCalculator {
             balance = Math.min(balance, carryOverLimit);
 
             // Add remaining accrued PTO until the specified date
-            balance += computePTOAccrualBetweenDates(nextExpirationDate, targetDate, entries);
+            balance += computeAccrualBetweenDates(nextExpirationDate, targetDate, entries);
         } else {
             // Compute projected balance
-            balance += computePTOAccrualBetweenDates(startDate, targetDate, entries);
+            balance += computeAccrualBetweenDates(startDate, targetDate, entries);
         }
 
         // Account for max balance
@@ -84,7 +84,7 @@ public class PTOCalculator {
      * @param entries    the list of existing time off entries
      * @return the projected PTO balance at the beginning of the specified date
      */
-    private double computePTOAccrualBetweenDates(LocalDate startDate, LocalDate targetDate, List<Entry<?>> entries) {
+    double computeAccrualBetweenDates(LocalDate startDate, LocalDate targetDate, List<Entry<?>> entries) {
         // Prepare variables
         double accrualRate = userSettings.getAccrualRate();
         AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
@@ -95,6 +95,11 @@ public class PTOCalculator {
 
         // Remove hours for entries
         for (Entry<?> entry : entries) {
+            // Skip entries that are completely outside the range
+            if (entry.getEndDate().isBefore(startDate) || entry.getStartDate().isAfter(targetDate)) {
+                continue;
+            }
+
             if (entry.isMultiDay()) {
                 double days = overlappingDays(entry.getStartDate(), entry.getEndDate(), targetDate);
                 accruedPto -= days * 8;
@@ -112,10 +117,10 @@ public class PTOCalculator {
      * 
      * @param entryStartDate the start date of the PTO entry
      * @param entryEndDate   the end date of the PTO entry
-     * @param targetDate     the target date to check against
+     * @param targetDate     the target date to check against, exclusive
      * @return the number of overlapping days
      */
-    private double overlappingDays(LocalDate entryStartDate, LocalDate entryEndDate, LocalDate targetDate) {
+    double overlappingDays(LocalDate entryStartDate, LocalDate entryEndDate, LocalDate targetDate) {
         // Adjust targetDate to be exclusive (calculate up to the day before)
         targetDate = targetDate.minusDays(1);
 
