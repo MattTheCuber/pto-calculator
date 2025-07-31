@@ -41,25 +41,28 @@ public class PTOCalculator {
         // Prepare variables
         LocalDate today = LocalDate.now();
         double balance = userSettings.getCurrentBalance();
-        double accrualRate = userSettings.getAccrualRate();
-        AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
         double maxBalance = userSettings.getMaxBalance();
         double carryOverLimit = userSettings.getCarryOverLimit();
-        MonthDay expirationDate = userSettings.getExpirationDate() == null ? null : userSettings.getExpirationDate();
 
-        // Compute projected balance
-        double daysSinceLastAccrual = date.toEpochDay() - today.toEpochDay();
-        double accruedPto = (daysSinceLastAccrual / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
-        balance += accruedPto;
+        // If there is a carry over PTO expiration during this period
+        LocalDate nextExpirationDate = userSettings.getNextExpirationDate();
+        if (carryOverLimit > 0 && nextExpirationDate != null && !date.isBefore(nextExpirationDate)) {
+            // Add accrued PTO until the next expiration date
+            balance += computePTOAccrualBetweenDates(today, nextExpirationDate, entries);
 
-        // Remove hours for entries
-        for (Entry<?> entry : entries) {
-            if (entry.isMultiDay()) {
-                double days = overlappingDays(entry.getStartDate(), entry.getEndDate(), date);
-                balance -= days * 8;
-            } else if (date.isAfter(entry.getStartDate())) {
-                balance -= entry.getDuration().toHours();
+            // Account for max balance
+            if (maxBalance > 0) {
+                balance = Math.min(balance, maxBalance);
             }
+
+            // Apply carry over limit
+            balance = Math.min(balance, carryOverLimit);
+
+            // Add remaining accrued PTO until the specified date
+            balance += computePTOAccrualBetweenDates(nextExpirationDate, date, entries);
+        } else {
+            // Compute projected balance
+            balance += computePTOAccrualBetweenDates(today, date, entries);
         }
 
         // Account for max balance
@@ -67,24 +70,38 @@ public class PTOCalculator {
             balance = Math.min(balance, maxBalance);
         }
 
-        // Account for carry over limit
-        if (carryOverLimit > 0 && expirationDate != null) {
-            // Calculate the next expiration date based on the current year
-            LocalDate nextExpirationDate = expirationDate.atYear(today.getYear());
-            if (nextExpirationDate.isBefore(today)) {
-                // If the expiration date has passed, set it to the next year
-                nextExpirationDate = nextExpirationDate.plusYears(1);
-            }
+        return balance;
+    }
 
-            // If the date is on or after the next expiration date, apply carry over limit
-            if (!date.isBefore(nextExpirationDate)) {
-                // TODO: Don't set, instead subtract the difference since you will accrue more
-                // after the expiration date
-                balance = Math.min(balance, carryOverLimit);
+    /**
+     * Computes the projected PTO balance at a given date, considering accrual and
+     * existing time off entries.
+     * 
+     * @param startDate  the date to start the calculation from
+     * @param targetDate the date to compute the balance for
+     * @param entries    the list of existing time off entries
+     * @return the projected PTO balance at the beginning of the specified date
+     */
+    private double computePTOAccrualBetweenDates(LocalDate startDate, LocalDate targetDate, List<Entry<?>> entries) {
+        // Prepare variables
+        double accrualRate = userSettings.getAccrualRate();
+        AccrualPeriod accrualPeriod = userSettings.getAccrualPeriod();
+
+        // Compute projected balance
+        double daysSinceLastAccrual = targetDate.toEpochDay() - startDate.toEpochDay();
+        double accruedPto = (daysSinceLastAccrual / AccrualPeriod.getDaysInPeriod(accrualPeriod)) * accrualRate;
+
+        // Remove hours for entries
+        for (Entry<?> entry : entries) {
+            if (entry.isMultiDay()) {
+                double days = overlappingDays(entry.getStartDate(), entry.getEndDate(), targetDate);
+                accruedPto -= days * 8;
+            } else if (targetDate.isAfter(entry.getStartDate())) {
+                accruedPto -= entry.getDuration().toHours();
             }
         }
 
-        return balance;
+        return accruedPto;
     }
 
     /**

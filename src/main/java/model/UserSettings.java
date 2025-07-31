@@ -4,6 +4,7 @@
 
 package model;
 
+import java.time.LocalDate;
 import java.time.MonthDay;
 
 import utilities.AccrualPeriod;
@@ -179,6 +180,27 @@ public class UserSettings {
         }
 
         this.currentBalance = currentBalance;
+    }
+
+    /**
+     * Calculates the next expiration date based on the current year.
+     * 
+     * @return the next expiration date, or null if no expiration date is set
+     */
+    public LocalDate getNextExpirationDate() {
+        LocalDate today = LocalDate.now();
+        if (expirationDate == null) {
+            return null;
+        }
+
+        // Calculate the next expiration date based on the current year
+        LocalDate nextExpirationDate = expirationDate.atYear(today.getYear());
+        if (nextExpirationDate.isBefore(today)) {
+            // If the expiration date has passed, set it to the next year
+            nextExpirationDate = nextExpirationDate.plusYears(1);
+        }
+
+        return nextExpirationDate;
     }
 
     /**
