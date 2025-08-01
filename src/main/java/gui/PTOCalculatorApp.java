@@ -204,11 +204,6 @@ public class PTOCalculatorApp extends Application {
 
         // Keep the current date and balance updated
         startUpdateThread();
-
-        // Keep the entry "search" panel always visible
-        calendarView.showSearchResultsTrayProperty().unbind();
-        calendarView.setShowSearchResultsTray(true);
-        calendarView.getSearchField().setText("Vacation");
     }
 
     /**
