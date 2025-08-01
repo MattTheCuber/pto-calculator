@@ -157,19 +157,28 @@ public class PTODatabase {
      * @param entries the list of vacation entries to update
      */
     public void updateVacations(List<Entry<?>> entries) {
-        // SQL statement to insert or replace vacation entries
-        String sql = "INSERT OR REPLACE INTO ptoEntries (id, userId, title, startDate, endDate, fullDay) VALUES (?, ?, ?, ?, ?, ?);";
+        // SQL statements to delete and replace vacation entries
+        String deleteSql = "DELETE FROM ptoEntries WHERE userId = ?;";
+        String insertSql = "INSERT INTO ptoEntries (id, userId, title, startDate, endDate, fullDay) VALUES (?, ?, ?, ?, ?, ?);";
 
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            // For each entry, set the parameters and execute the query
+        // Delete existing entries for the user
+        try (PreparedStatement deletePstmt = connection.prepareStatement(deleteSql)) {
+            deletePstmt.setInt(1, userId);
+            deletePstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        // Insert new entries for the user
+        try (PreparedStatement insertPstmt = connection.prepareStatement(insertSql)) {
             for (Entry<?> entry : entries) {
-                pstmt.setString(1, entry.getId());
-                pstmt.setInt(2, userId);
-                pstmt.setString(3, entry.getTitle());
-                pstmt.setString(4, entry.getStartAsLocalDateTime().toString());
-                pstmt.setString(5, entry.getEndAsLocalDateTime().toString());
-                pstmt.setBoolean(6, entry.isFullDay());
-                pstmt.executeUpdate();
+                insertPstmt.setString(1, entry.getId());
+                insertPstmt.setInt(2, userId);
+                insertPstmt.setString(3, entry.getTitle());
+                insertPstmt.setString(4, entry.getStartAsLocalDateTime().toString());
+                insertPstmt.setString(5, entry.getEndAsLocalDateTime().toString());
+                insertPstmt.setBoolean(6, entry.isFullDay());
+                insertPstmt.executeUpdate();
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
