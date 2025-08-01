@@ -50,7 +50,6 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
-import utilities.CustomCalendarView;
 import utilities.PTOCalculator;
 
 /**
@@ -91,7 +90,7 @@ public class PTOCalculatorApp extends Application {
         ptoCalculator = new PTOCalculator(userSettings);
 
         // Create the main calendar view
-        calendarView = new CustomCalendarView();
+        calendarView = new CalendarView();
 
         // Set the current date and time for the calendar view
         calendarView.setRequestedTime(LocalTime.now());
