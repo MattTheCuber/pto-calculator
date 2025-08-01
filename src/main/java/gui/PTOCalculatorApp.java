@@ -389,7 +389,7 @@ public class PTOCalculatorApp extends Application {
      */
     private void onClick(MouseEvent evt) {
         // If the left mouse button was clicked
-        if (evt.getButton().equals(MouseButton.PRIMARY)) {
+        if (evt.getButton().equals(MouseButton.PRIMARY) && evt.getClickCount() == 1) {
             // Get the month view and the date at the clicked position
             // TODO: Make this work with every view
             MonthView monthView = calendarView.getMonthPage().getMonthView();
@@ -402,8 +402,10 @@ public class PTOCalculatorApp extends Application {
 
                 // Show the balance in the popover
                 balanceLabel.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
-                balancePopOver.show(monthView, evt.getScreenX(), evt.getScreenY());
+                balancePopOver.show(monthView, evt.getScreenX() + 10, evt.getScreenY());
             }
+        } else {
+            balancePopOver.hide();
         }
     }
 
