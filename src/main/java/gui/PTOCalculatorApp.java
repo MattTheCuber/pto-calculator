@@ -9,8 +9,6 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.controlsfx.control.PopOver;
 import org.kordamp.ikonli.fontawesome.FontAwesome;
@@ -57,22 +55,27 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
+import utilities.EntriesHelper;
 import utilities.PTOCalculator;
 
 /**
  * Main class for the Paid Time Off Planning Tool providing the user interface.
  */
 public class PTOCalculatorApp extends Application {
-    private UserSettings userSettings;
-    private PTOCalculator ptoCalculator;
-    private PTODatabase ptoDatabase;
-
     private Stage primaryStage;
-    private CalendarView calendarView;
-    private Calendar<?> calendar;
+    private final CalendarView calendarView = new CalendarView(Page.MONTH, Page.YEAR);
+    private final Calendar<?> calendar = new Calendar<>("Time Off");
 
-    private PopOver balancePopOver;
-    private Label balanceLabel;
+    private final UserSettings userSettings = new UserSettings();
+    private final PTOCalculator ptoCalculator = new PTOCalculator(userSettings);
+    private final PTODatabase ptoDatabase = new PTODatabase();
+    private final EntriesHelper entriesHelper = new EntriesHelper(calendar);
+
+    private final Label currentBalanceLabel = new Label();
+    private final PopOver projectedBalancePopOver = new PopOver();
+    private final Label projectedBalanceLabel = new Label();
+    private final Button settingsButton = new Button();
+    private final Button addEntryButton = new Button();
 
     /**
      * Main method to run the application.
@@ -91,19 +94,36 @@ public class PTOCalculatorApp extends Application {
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // Initialize program classes
-        ptoDatabase = new PTODatabase();
-        userSettings = new UserSettings();
-        ptoCalculator = new PTOCalculator(userSettings);
+        configureCalendarView();
+        customizeCalendarView();
+        buildExtraToolbarControls();
 
-        // Create the main calendar view
-        calendarView = new CalendarView(Page.MONTH, Page.YEAR);
+        // Create the main application layout
+        Scene scene = new Scene(calendarView);
+        primaryStage.setTitle("Paid Time Off Planning Tool");
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon.png")));
+        primaryStage.setScene(scene);
+        primaryStage.setWidth(1300);
+        primaryStage.setHeight(1000);
+        primaryStage.centerOnScreen();
+        primaryStage.show();
+        this.primaryStage = primaryStage;
 
+        calendarView.addEventHandler(RequestEvent.ANY, evt -> changeView(evt));
+        updateToolbar();
+        loadUserSettings();
+        loadEntries();
+        startUpdateThread();
+    }
+
+    /*
+     * Configure the initial setup for the calendar view.
+     */
+    public void configureCalendarView() {
         // Set the current date and time for the calendar view
         calendarView.setRequestedTime(LocalTime.now());
 
         // Create the time off calendar
-        calendar = new Calendar<>("Time Off");
         calendar.setStyle(Style.STYLE1);
 
         // Add listeners to handle calendar events
@@ -116,7 +136,12 @@ public class PTOCalculatorApp extends Application {
 
         // Set the default calendar to the time off calendar
         calendarView.setDefaultCalendarProvider(control -> calendar);
+    }
 
+    /*
+     * Customize the calendar view and controls.
+     */
+    public void customizeCalendarView() {
         // Customize the calendar view and controls
         calendarView.setShowAddCalendarButton(false);
         calendarView.setShowSourceTray(false);
@@ -159,8 +184,8 @@ public class PTOCalculatorApp extends Application {
             box.getChildren().remove(9);
             box.getChildren().remove(8);
 
-            // Ensure the balance popup is closed
-            balancePopOver.hide();
+            // Ensure the projected balance popup is closed
+            projectedBalancePopOver.hide();
 
             return popUp;
         });
@@ -173,8 +198,8 @@ public class PTOCalculatorApp extends Application {
             ContextMenu contextMenu = defaultEntryContextMenuFactory.call(param);
             contextMenu.getItems().remove(1);
 
-            // Ensure the balance popup is closed
-            balancePopOver.hide();
+            // Ensure the projected balance popup is closed
+            projectedBalancePopOver.hide();
 
             return contextMenu;
         });
@@ -202,44 +227,53 @@ public class PTOCalculatorApp extends Application {
             return false;
         });
 
-        // Balance popover
-        balanceLabel = new Label();
-        balanceLabel.getStyleClass().add("no-entries-label");
-        balancePopOver = new PopOver();
-        balancePopOver.getRoot().getStylesheets().add(CalendarView.class.getResource("calendar.css").toExternalForm());
-        balancePopOver.getRoot().getStyleClass().add("root");
-        balancePopOver.setContentNode(balanceLabel);
-        balancePopOver.getStyleClass().add("date-popover");
-        balancePopOver.setArrowIndent(4);
-        balancePopOver.setDetachable(false);
-        balancePopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_CENTER);
-        balancePopOver.setCornerRadius(4);
-        balancePopOver.setHideOnEscape(true);
-        balancePopOver.setAutoHide(true);
+        // Projected balance popover
+        projectedBalanceLabel.getStyleClass().add("no-entries-label");
+        projectedBalancePopOver.getRoot().getStylesheets()
+                .add(CalendarView.class.getResource("calendar.css").toExternalForm());
+        projectedBalancePopOver.getRoot().getStyleClass().add("root");
+        projectedBalancePopOver.setContentNode(projectedBalanceLabel);
+        projectedBalancePopOver.getStyleClass().add("date-popover");
+        projectedBalancePopOver.setArrowIndent(4);
+        projectedBalancePopOver.setDetachable(false);
+        projectedBalancePopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_CENTER);
+        projectedBalancePopOver.setCornerRadius(4);
+        projectedBalancePopOver.setHideOnEscape(true);
+        projectedBalancePopOver.setAutoHide(true);
+    }
 
-        // Create the main application layout
-        Scene scene = new Scene(calendarView);
-        primaryStage.setTitle("Paid Time Off Planning Tool");
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon.png")));
-        primaryStage.setScene(scene);
-        primaryStage.setWidth(1300);
-        primaryStage.setHeight(1000);
-        primaryStage.centerOnScreen();
-        primaryStage.show();
-        this.primaryStage = primaryStage;
+    /*
+     * Builds the extra toolbar controls for the calendar view.
+     */
+    public void buildExtraToolbarControls() {
+        // Build the settings button
+        // Reference:
+        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
+        FontIcon settingsIcon = new FontIcon(FontAwesome.COG);
+        settingsIcon.getStyleClass().addAll("button-icon");
+        settingsButton.setId("settings-button");
+        settingsButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        settingsButton.setOnAction(evt -> openSettings());
+        settingsButton.setMaxHeight(Double.MAX_VALUE);
+        settingsButton.setGraphic(settingsIcon);
+        settingsButton.setTooltip(new Tooltip("Settings"));
 
-        // Add the settings button to the toolbar
-        calendarView.addEventHandler(RequestEvent.ANY, evt -> changeView(evt));
-        updateToolbar();
+        // Build the add entry button
+        // Reference:
+        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
+        FontIcon addEntryIcon = new FontIcon(FontAwesome.PLUS);
+        addEntryIcon.getStyleClass().addAll("button-icon");
+        addEntryButton.setId("add-button");
+        addEntryButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        addEntryButton.setOnAction(evt -> openAddEntryDialog());
+        addEntryButton.setMaxHeight(Double.MAX_VALUE);
+        addEntryButton.setGraphic(addEntryIcon);
+        addEntryButton.setTooltip(new Tooltip("Add Entry"));
 
-        // Load user settings from the database
-        loadUserSettings();
-
-        // Add the existing entries to the calendar
-        loadEntries();
-
-        // Keep the current date and balance updated
-        startUpdateThread();
+        // Center the current balance label vertically
+        currentBalanceLabel.setMaxHeight(Double.MAX_VALUE);
+        currentBalanceLabel.setStyle("-fx-font-size: 14px;");
+        currentBalanceLabel.setTooltip(new Tooltip("Balance is shown from the start of today"));
     }
 
     /**
@@ -283,7 +317,7 @@ public class PTOCalculatorApp extends Application {
         // If the last update date is before today
         if (lastUpdate != null && lastUpdate.isBefore(LocalDate.now())) {
             // Compute the accrued PTO since the last update
-            List<Entry<?>> entries = getDateEntries(lastUpdate);
+            List<Entry<?>> entries = entriesHelper.getDateEntries(lastUpdate);
             double newBalance = ptoCalculator.computeAccruedBalance(lastUpdate, LocalDate.now(), entries);
             // Update the current balance and user settings
             userSettings.setCurrentBalance(newBalance);
@@ -293,6 +327,9 @@ public class PTOCalculatorApp extends Application {
             double accrued = (userSettings.getCurrentBalance() - newBalance);
             System.out.println("Accrued PTO since " + lastUpdate + ": " + accrued);
         }
+
+        // Update the current balance label
+        updateCurrentBalanceLabel();
 
         // Print the loaded user settings
         System.out.println("Loaded User Settings: " + userSettings);
@@ -319,7 +356,7 @@ public class PTOCalculatorApp extends Application {
      */
     private void removeInvalidEntries() {
         // Get all entries starting from today
-        List<Entry<?>> entries = getAllEntries();
+        List<Entry<?>> entries = entriesHelper.getAllEntries();
 
         // Validate the entries and remove any invalid ones
         int invalidCount = 0;
@@ -328,7 +365,7 @@ public class PTOCalculatorApp extends Application {
             Entry<?> entry = iterator.next();
             // If the entry is invalid, remove it from the list
             if (!entry.getEndDate().isBefore(LocalDate.now())
-                    && !ptoCalculator.validateEntry(entry, getFutureEntries())) {
+                    && !ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries())) {
                 iterator.remove();
                 calendar.removeEntry(entry);
                 invalidCount++;
@@ -346,86 +383,6 @@ public class PTOCalculatorApp extends Application {
                     + " invalid entries stored in the database. They have been removed from the calendar.");
             alert.show();
         }
-    }
-
-    /**
-     * Gets all entries starting from a specific date.
-     * 
-     * @param startDate The date from which to start fetching entries.
-     * @return A list of entries starting from the specified date.
-     */
-    private List<Entry<?>> getDateEntries(LocalDate startDate) {
-        // Fetch all entries from the calendar starting from the specified date
-        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
-                startDate,
-                LocalDate.MAX,
-                calendarView.getZoneId());
-        // Flatten the map values into a list and remove duplicates
-        List<Entry<?>> entries = entriesMap.values().stream()
-                .flatMap(List::stream)
-                .distinct()
-                .collect(Collectors.toList());
-        return entries;
-    }
-
-    /**
-     * Gets all entries starting from a specific date.
-     * 
-     * @param startDate The date from which to start fetching entries.
-     * @param endDate   The date until which to fetch entries.
-     * @return A list of entries starting from the specified date.
-     */
-    private List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
-        // Fetch all entries from the calendar starting from the specified date
-        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
-                startDate,
-                endDate,
-                calendarView.getZoneId());
-        // Flatten the map values into a list and remove duplicates
-        List<Entry<?>> entries = entriesMap.values().stream()
-                .flatMap(List::stream)
-                .distinct()
-                .collect(Collectors.toList());
-        return entries;
-    }
-
-    /**
-     * Gets all future entries in the calendar.
-     * 
-     * @return A list of future entries.
-     */
-    private List<Entry<?>> getFutureEntries() {
-        // Fetch all entries from the calendar starting from today
-        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
-                LocalDate.now(),
-                LocalDate.MAX,
-                calendarView.getZoneId());
-        // Flatten the map values into a list and remove duplicates
-        List<Entry<?>> entries = entriesMap.values().stream()
-                .flatMap(List::stream)
-                .distinct()
-                .collect(Collectors.toList());
-        return entries;
-    }
-
-    /**
-     * Gets all entries in the calendar.
-     * 
-     * @return A list of all entries in the calendar.
-     */
-    private List<Entry<?>> getAllEntries() {
-        // Fetch all entries from the calendar
-        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
-                // LocalDate.MIN results in 0 entries
-                LocalDate.of(-99999999, 1, 1),
-                LocalDate.MAX,
-                calendarView.getZoneId());
-        // Flatten the map values into a list and remove duplicates
-        List<Entry<?>> entries = entriesMap.values().stream()
-                .flatMap(List::stream)
-                .distinct()
-                .collect(Collectors.toList());
-        return entries;
     }
 
     /**
@@ -458,7 +415,8 @@ public class PTOCalculatorApp extends Application {
         }
 
         // If the entry is invalid
-        List<Entry<?>> entries = getDateEntries(LocalDate.now(), evt.getEntry().getInterval().getEndDate());
+        List<Entry<?>> entries = entriesHelper.getDateEntries(LocalDate.now(),
+                evt.getEntry().getInterval().getEndDate());
         if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), entries)) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
 
@@ -503,7 +461,7 @@ public class PTOCalculatorApp extends Application {
             alert.showAndWait();
         } else {
             // Otherwise, update the database with the current entries
-            ptoDatabase.updateVacations(getAllEntries());
+            ptoDatabase.updateVacations(entriesHelper.getAllEntries());
         }
     }
 
@@ -518,14 +476,14 @@ public class PTOCalculatorApp extends Application {
             // If the date is in the future
             if (date != null && !date.isBefore(LocalDate.now())) {
                 // Compute the projected PTO balance at the start of the date
-                double balance = ptoCalculator.computeBalanceAtDate(date, getFutureEntries());
+                double balance = ptoCalculator.computeBalanceAtDate(date, entriesHelper.getFutureEntries());
 
-                // Show the balance in the popover
-                balanceLabel.setText(String.format("Projected PTO balance (start of date): %.2f", balance));
-                balancePopOver.show(owner, evt.getScreenX() + 10, evt.getScreenY());
+                // Show the projected balance in the popover
+                projectedBalanceLabel.setText(String.format("Projected PTO balance (start of date): %.2f", balance));
+                projectedBalancePopOver.show(owner, evt.getScreenX() + 10, evt.getScreenY());
             }
         } else {
-            balancePopOver.hide();
+            projectedBalancePopOver.hide();
         }
     }
 
@@ -538,7 +496,7 @@ public class PTOCalculatorApp extends Application {
     private void changeView(Event evt) {
         // If the event is an action event (calendar switching), update the toolbar
         if (evt instanceof ActionEvent || evt instanceof RequestEvent) {
-            balancePopOver.hide();
+            projectedBalancePopOver.hide();
             updateToolbar();
         }
     }
@@ -559,41 +517,32 @@ public class PTOCalculatorApp extends Application {
             return;
         }
 
-        // Build the settings button
-        // Reference:
-        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
-        FontIcon settingsIcon = new FontIcon(FontAwesome.COG);
-        settingsIcon.getStyleClass().addAll("button-icon", "settings-button-icon");
-        Button settingsButton = new Button();
-        settingsButton.setId("settings-button");
-        settingsButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        settingsButton.setOnAction(evt -> openSettings());
-        settingsButton.setMaxHeight(Double.MAX_VALUE);
-        settingsButton.setGraphic(settingsIcon);
-        settingsButton.setTooltip(new Tooltip("Settings"));
-
         // Add the settings button
         leftToolBarBox.getChildren().add(0, settingsButton);
-
-        // Build the add entry button
-        // Reference:
-        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
-        FontIcon addEntryIcon = new FontIcon(FontAwesome.PLUS);
-        addEntryIcon.getStyleClass().addAll("button-icon", "add-button-icon");
-        Button addEntryButton = new Button();
-        addEntryButton.setId("add-button");
-        addEntryButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        addEntryButton.setOnAction(evt -> openAddEntryDialog());
-        addEntryButton.setMaxHeight(Double.MAX_VALUE);
-        addEntryButton.setGraphic(addEntryIcon);
-        addEntryButton.setTooltip(new Tooltip("Add Entry"));
 
         // Add the add entry button
         leftToolBarBox.getChildren().add(2, new Separator(Orientation.VERTICAL));
         leftToolBarBox.getChildren().add(3, addEntryButton);
 
+        if (calendarView.getSelectedPage().equals(Page.YEAR)) {
+            // Add the current balance label
+            leftToolBarBox.getChildren().add(6, new Separator(Orientation.VERTICAL));
+            leftToolBarBox.getChildren().add(7, currentBalanceLabel);
+        } else {
+            // Add the current balance label
+            leftToolBarBox.getChildren().add(4, new Separator(Orientation.VERTICAL));
+            leftToolBarBox.getChildren().add(5, currentBalanceLabel);
+        }
+
         // Clear focus on the button by requesting focus on something else
         calendarView.requestFocus();
+    }
+
+    /**
+     * Updates the current balance label with the current PTO balance
+     */
+    private void updateCurrentBalanceLabel() {
+        currentBalanceLabel.setText(String.format("Current PTO Balance: %.2f", userSettings.getCurrentBalance()));
     }
 
     /**
@@ -612,17 +561,21 @@ public class PTOCalculatorApp extends Application {
 
             // Remove all entries that are invalid with the new settings
             removeInvalidEntries();
+
+            // Update the current balance label
+            updateCurrentBalanceLabel();
         }
     }
 
+    /**
+     * Opens the add entry dialog to allow the user to add a new time off entry.
+     */
     private void openAddEntryDialog() {
         // Create and open the add entry dialog
         AddEntryDialog dialog = new AddEntryDialog(
                 primaryStage,
                 calendarView,
-                entry -> {
-                    return ptoCalculator.validateEntry(entry, getFutureEntries());
-                });
+                entry -> ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries()));
         dialog.open();
 
         // If the dialog was saved, update the database with the new entries

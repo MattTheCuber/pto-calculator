@@ -5,8 +5,6 @@
 
 ## Shoulds
 
-- [ ] Add the current PTO balance to the toolbar
-- [ ] Add button for adding entry to calendar in toolbar which opens an input dialog
 - [ ] Make editing the date or time not close the popover immediately
 - [ ] If the current date changes, update userSettings.currentBalance
 - [ ] Instead of removing entries when saving settings, let the user decide what to do
