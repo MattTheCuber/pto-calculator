@@ -7,6 +7,7 @@ package gui;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -98,9 +99,6 @@ public class PTOCalculatorApp extends Application {
         // Create the time off calendar
         calendar = new Calendar<>("Time Off");
         calendar.setStyle(Style.STYLE1);
-
-        // Add the existing entries to the calendar
-        loadEntries();
 
         // Add listeners to handle calendar events
         calendar.addEventHandler(evt -> eventHandler(evt));
@@ -210,6 +208,9 @@ public class PTOCalculatorApp extends Application {
         // Load user settings from the database
         loadUserSettings();
 
+        // Add the existing entries to the calendar
+        loadEntries();
+
         // Keep the current date and balance updated
         startUpdateThread();
     }
@@ -276,7 +277,34 @@ public class PTOCalculatorApp extends Application {
      * calendar.
      */
     private void loadEntries() {
+        // Fetch all vacation entries from the database
         List<Entry<?>> entries = ptoDatabase.getVacations();
+
+        // Validate the entries and remove any invalid ones
+        int invalidCount = 0;
+        Iterator<Entry<?>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Entry<?> entry = iterator.next();
+            // If the entry is invalid, remove it from the list
+            if (!ptoCalculator.validateEntry(entry, getFutureEntries())) {
+                iterator.remove();
+                invalidCount++;
+            }
+        }
+
+        if (invalidCount > 0) {
+            // Update the database to remove invalid entries
+            ptoDatabase.updateVacations(entries);
+
+            // Show a warning alert if there are invalid entries
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setHeaderText("Invalid Entries Found");
+            alert.setContentText("Found " + invalidCount
+                    + " invalid entries stored in the database. They have been removed from the calendar.");
+            alert.show();
+        }
+
+        // Add the valid entries to the calendar
         calendar.addEntries(entries);
         System.out.println("Loaded " + entries.size() + " entries from the database.");
     }
