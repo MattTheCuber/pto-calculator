@@ -35,6 +35,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -42,6 +43,7 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.input.InputEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -65,8 +67,8 @@ public class PTOCalculatorApp extends Application {
     private CalendarView calendarView;
     private Calendar<?> calendar;
 
-    PopOver balancePopOver;
-    Label balanceLabel;
+    private PopOver balancePopOver;
+    private Label balanceLabel;
 
     /**
      * Main method to run the application.
@@ -102,7 +104,6 @@ public class PTOCalculatorApp extends Application {
 
         // Add listeners to handle calendar events
         calendar.addEventHandler(evt -> eventHandler(evt));
-        calendarView.getMonthPage().getMonthView().addEventHandler(MouseEvent.MOUSE_CLICKED, evt -> onClick(evt));
 
         // Add the calendar to the calendar view
         CalendarSource calendarSource = new CalendarSource("Calendars");
@@ -172,6 +173,28 @@ public class PTOCalculatorApp extends Application {
             balancePopOver.hide();
 
             return contextMenu;
+        });
+
+        // Customize the month view single click popup to show the projected balance
+        calendarView.getMonthPage().getMonthView().addEventHandler(MouseEvent.MOUSE_CLICKED, evt -> {
+            // Get the month view and the date at the clicked position
+            MonthView monthView = calendarView.getMonthPage().getMonthView();
+            ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
+
+            // Open the balance popup for the clicked date
+            openBalancePopup(evt, monthView, date.toLocalDate());
+        });
+
+        // Customize the year view single click popup to show the projected balance
+        calendarView.setDateDetailsCallback(param -> {
+            InputEvent evt = param.getInputEvent();
+            if (evt instanceof MouseEvent) {
+                MouseEvent mouseEvent = (MouseEvent) evt;
+                // Open the balance popup for the clicked date
+                openBalancePopup(mouseEvent, param.getOwner(), param.getLocalDate());
+                return true;
+            }
+            return false;
         });
 
         // Balance popover
@@ -480,25 +503,21 @@ public class PTOCalculatorApp extends Application {
     }
 
     /**
-     * Handles mouse clicks on the calendar view to show the projected PTO balance.
+     * Open the balance popup when the user clicks on a date in the calendar.
      * 
      * @param evt The mouse event that occurred.
      */
-    private void onClick(MouseEvent evt) {
+    private void openBalancePopup(MouseEvent evt, Node owner, LocalDate date) {
         // If the left mouse button was clicked
         if (evt.getButton().equals(MouseButton.PRIMARY) && evt.getClickCount() == 1) {
-            // Get the month view and the date at the clicked position
-            MonthView monthView = calendarView.getMonthPage().getMonthView();
-            ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
-
             // If the date is in the future
-            if (date != null && !date.toLocalDate().isBefore(LocalDate.now())) {
+            if (date != null && !date.isBefore(LocalDate.now())) {
                 // Compute the projected PTO balance at the start of the date
-                double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
+                double balance = ptoCalculator.computeBalanceAtDate(date, getFutureEntries());
 
                 // Show the balance in the popover
                 balanceLabel.setText(String.format("Projected PTO balance (start of date): %.2f", balance));
-                balancePopOver.show(monthView, evt.getScreenX() + 10, evt.getScreenY());
+                balancePopOver.show(owner, evt.getScreenX() + 10, evt.getScreenY());
             }
         } else {
             balancePopOver.hide();
@@ -514,6 +533,7 @@ public class PTOCalculatorApp extends Application {
     private void changeView(Event evt) {
         // If the event is an action event (calendar switching), update the toolbar
         if (evt instanceof ActionEvent) {
+            balancePopOver.hide();
             updateToolbar();
         }
     }
