@@ -134,8 +134,22 @@ public class PTOCalculatorTest {
     public void testComputeAccrualBetweenDatesWithASingleDayEntry() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 2, 1);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 9, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
         Entry<?> entry = new Entry<>("Test", interval);
+        List<Entry<?>> entries = List.of(entry);
+
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+
+        assert accruedPto == 27 : "Expected 27 hours of accrued PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccrualBetweenDatesWithASingleFullDayEntry() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 2, 1);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
         List<Entry<?>> entries = List.of(entry);
 
         double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
@@ -161,8 +175,22 @@ public class PTOCalculatorTest {
     public void testComputeAccrualBetweenDatesWithASingleDayEntryNegative() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 9, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
         Entry<?> entry = new Entry<>("Test", interval);
+        List<Entry<?>> entries = List.of(entry);
+
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+
+        assert accruedPto == -3 : "Expected -3 hours of accrued PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccrualBetweenDatesWithASingleFullDayEntryNegative() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 1, 2);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
         List<Entry<?>> entries = List.of(entry);
 
         double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
