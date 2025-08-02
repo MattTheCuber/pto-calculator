@@ -28,12 +28,18 @@ import com.calendarfx.view.RequestEvent;
 import com.calendarfx.view.popover.EntryDetailsView;
 import com.calendarfx.view.popover.EntryHeaderView;
 import com.calendarfx.view.popover.EntryPopOverContentPane;
+import com.calendarfx.view.print.OptionsView;
+import com.calendarfx.view.print.PrintView;
+import com.calendarfx.view.print.SettingsView;
 
 import impl.com.calendarfx.view.CalendarViewSkin;
+import impl.com.calendarfx.view.print.OptionsViewSkin;
+import impl.com.calendarfx.view.print.SettingsViewSkin;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -51,6 +57,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.PTODatabase;
@@ -533,15 +540,39 @@ public class PTOCalculatorApp extends Application {
         leftToolBarBox.getChildren().add(2, new Separator(Orientation.VERTICAL));
         leftToolBarBox.getChildren().add(3, addEntryButton);
 
+        // Add the current balance label
         if (calendarView.getSelectedPage().equals(Page.YEAR)) {
-            // Add the current balance label
             leftToolBarBox.getChildren().add(6, new Separator(Orientation.VERTICAL));
             leftToolBarBox.getChildren().add(7, currentBalanceLabel);
         } else {
-            // Add the current balance label
             leftToolBarBox.getChildren().add(4, new Separator(Orientation.VERTICAL));
             leftToolBarBox.getChildren().add(5, currentBalanceLabel);
         }
+
+        // Customize the print button action
+        Button printButton = (Button) leftToolBarBox.getChildren().get(1);
+        EventHandler<ActionEvent> printButtonHandler = printButton.getOnAction();
+        printButton.setOnAction(evt -> {
+            // Call the original print button handler
+            printButtonHandler.handle(evt);
+
+            // Remove the sources section from the print settings
+            PrintView printView = calendarView.getPrintView();
+            SettingsView settingsView = printView.getSettingsView();
+            SettingsViewSkin settingsViewSkin = (SettingsViewSkin) settingsView.getSkin();
+            VBox settingsViewContainer = (VBox) settingsViewSkin.getChildren().get(0);
+            if (settingsViewContainer.getChildren().size() == 8) {
+                settingsViewContainer.getChildren().remove(5);
+                settingsViewContainer.getChildren().remove(4);
+
+                // Disable printing calendar keys and hide the checkbox
+                OptionsView optionsView = settingsView.getOptionsView();
+                optionsView.setShowCalendarKeys(false);
+                OptionsViewSkin optionsViewSkin = (OptionsViewSkin) optionsView.getSkin();
+                VBox optionsViewContainer = (VBox) optionsViewSkin.getChildren().get(0);
+                optionsViewContainer.getChildren().remove(3);
+            }
+        });
 
         // Clear focus on the button by requesting focus on something else
         calendarView.requestFocus();
