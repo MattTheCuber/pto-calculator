@@ -114,6 +114,10 @@ public class PTOCalculatorApp extends Application {
         loadUserSettings();
         loadEntries();
         startUpdateThread();
+
+        if (ptoDatabase.isFirstTimeUser()) {
+            openSettings();
+        }
     }
 
     /*

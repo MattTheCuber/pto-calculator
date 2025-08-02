@@ -28,6 +28,7 @@ public class PTODatabase {
     private Connection connection;
     private final String url = "jdbc:sqlite:ptoCalculator.db";
     private int userId;
+    private boolean firstTimeUser = false;
 
     /**
      * Constructor to initialize the database connection and create necessary
@@ -50,7 +51,7 @@ public class PTODatabase {
         createPTOEntriesTable();
 
         // Get or create the user
-        userId = getOrCreateUser();
+        getOrCreateUser();
     }
 
     /**
@@ -60,7 +61,7 @@ public class PTODatabase {
         // SQL statement to create the users table
         String sql = "CREATE TABLE IF NOT EXISTS users ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "name TEXT NOT NULL"
+                + "name TEXT NOT NULL UNIQUE"
                 + ");";
 
         // Execute the SQL statement
@@ -124,7 +125,7 @@ public class PTODatabase {
      * 
      * @return the user ID
      */
-    private Integer getOrCreateUser() {
+    private void getOrCreateUser() {
         // Get the system username
         String username = System.getProperty("user.name");
 
@@ -132,7 +133,8 @@ public class PTODatabase {
         String sql = "INSERT OR IGNORE INTO users (name) VALUES (?);";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.executeUpdate();
+            int rowsAffected = pstmt.executeUpdate();
+            firstTimeUser = rowsAffected == 1;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -143,12 +145,20 @@ public class PTODatabase {
             pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return rs.getInt("id");
+                userId = rs.getInt("id");
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
-        return -1;
+    }
+
+    /**
+     * Checks if the user is a first-time user.
+     * 
+     * @return true if the user is a first-time user, false otherwise
+     */
+    public boolean isFirstTimeUser() {
+        return firstTimeUser;
     }
 
     /**
