@@ -15,7 +15,6 @@ import utilities.AccrualPeriod;
 public class UserSettings {
     double accrualRate;
     AccrualPeriod accrualPeriod;
-    // TODO: Add accrual compounding period
     double maxBalance;
     double carryOverLimit;
     MonthDay expirationDate;

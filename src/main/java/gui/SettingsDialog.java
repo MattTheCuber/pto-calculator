@@ -82,8 +82,6 @@ public class SettingsDialog {
         Label balanceLabel = new Label("Current Balance:");
         balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 1);
         balanceSpinner.setEditable(true);
-        // TODO: Could make this more reactive by listening to on type instead of just
-        // value changes
         balanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
                 balanceSpinner.getValueFactory().setValue(0.0);

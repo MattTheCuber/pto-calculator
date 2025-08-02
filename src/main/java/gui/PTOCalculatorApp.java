@@ -68,8 +68,6 @@ public class PTOCalculatorApp extends Application {
     PopOver balancePopOver;
     Label balanceLabel;
 
-    private boolean firstInvalid = false;
-
     /**
      * Main method to run the application.
      * 
@@ -137,7 +135,6 @@ public class PTOCalculatorApp extends Application {
             return entry;
         });
 
-        // TODO: Make editing the date or time not close the popover immediately
         // Customize the entry details popover content for adding/editing entries
         calendarView.setEntryDetailsPopOverContentCallback(param -> {
             // Default implementation for creating the popover content
@@ -228,7 +225,6 @@ public class PTOCalculatorApp extends Application {
                 // Continuously update the calendar view with the current date and time
                 while (true) {
                     Platform.runLater(() -> {
-                        // TODO: If date changes, update userSettings.currentBalance
                         calendarView.setToday(LocalDate.now());
                         calendarView.setTime(LocalTime.now());
                     });
@@ -345,6 +341,27 @@ public class PTOCalculatorApp extends Application {
     }
 
     /**
+     * Gets all entries starting from a specific date.
+     * 
+     * @param startDate The date from which to start fetching entries.
+     * @param endDate   The date until which to fetch entries.
+     * @return A list of entries starting from the specified date.
+     */
+    private List<Entry<?>> getDateEntries(LocalDate startDate, LocalDate endDate) {
+        // Fetch all entries from the calendar starting from the specified date
+        Map<LocalDate, List<Entry<?>>> entriesMap = calendar.findEntries(
+                startDate,
+                endDate,
+                calendarView.getZoneId());
+        // Flatten the map values into a list and remove duplicates
+        List<Entry<?>> entries = entriesMap.values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .collect(Collectors.toList());
+        return entries;
+    }
+
+    /**
      * Gets all future entries in the calendar.
      * 
      * @return A list of future entries.
@@ -392,7 +409,6 @@ public class PTOCalculatorApp extends Application {
         // Added or removed entries
         if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
             if (evt.getEntry().getCalendar() != null) {
-                // TODO: Restrict to weekdays
                 System.out.println("Added entry " + evt.getEntry().getTitle());
             } else {
                 System.out.println("Removed entry " + evt.getEntry().getTitle());
@@ -405,7 +421,6 @@ public class PTOCalculatorApp extends Application {
         }
         // Entry interval property changes
         else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
-            // TODO: Enforce configurable increments (e.g., 15 minutes or 8 hours)
             System.out.println("Entry " + evt.getEntry().getTitle() + " changed to "
                     + evt.getEntry().getInterval());
         }
@@ -415,8 +430,7 @@ public class PTOCalculatorApp extends Application {
         }
 
         // If the entry is invalid
-        // TODO: Make this only include entries up to the entry date
-        List<Entry<?>> entries = getFutureEntries();
+        List<Entry<?>> entries = getDateEntries(LocalDate.now(), evt.getEntry().getInterval().getEndDate());
         if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), entries)) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
 
@@ -474,7 +488,6 @@ public class PTOCalculatorApp extends Application {
         // If the left mouse button was clicked
         if (evt.getButton().equals(MouseButton.PRIMARY) && evt.getClickCount() == 1) {
             // Get the month view and the date at the clicked position
-            // TODO: Make this work with every view
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
 
@@ -484,7 +497,7 @@ public class PTOCalculatorApp extends Application {
                 double balance = ptoCalculator.computeBalanceAtDate(date.toLocalDate(), getFutureEntries());
 
                 // Show the balance in the popover
-                balanceLabel.setText(String.format("Projected PTO Balance (start of date): %.2f", balance));
+                balanceLabel.setText(String.format("Projected PTO balance (start of date): %.2f", balance));
                 balancePopOver.show(monthView, evt.getScreenX() + 10, evt.getScreenY());
             }
         } else {
@@ -510,7 +523,6 @@ public class PTOCalculatorApp extends Application {
      * information.
      */
     private void updateToolbar() {
-        // TODO: Add current PTO balance
         // Fetch the toolbar from the calendar view
         CalendarViewSkin skin = (CalendarViewSkin) calendarView.skinProperty().get();
         BorderPane borderPane = (BorderPane) skin.getChildren().get(0);
@@ -552,7 +564,6 @@ public class PTOCalculatorApp extends Application {
             dialog.applyTo(userSettings);
             ptoDatabase.updateUserSettings(userSettings);
 
-            // TODO: Instead of removing entries, let the user decide what to do
             // Remove all entries that are invalid with the new settings
             removeInvalidEntries();
         }
