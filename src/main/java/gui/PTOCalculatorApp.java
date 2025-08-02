@@ -9,6 +9,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import org.controlsfx.control.PopOver;
 import org.kordamp.ikonli.fontawesome.FontAwesome;
@@ -37,6 +38,8 @@ import impl.com.calendarfx.view.print.OptionsViewSkin;
 import impl.com.calendarfx.view.print.SettingsViewSkin;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableSet;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -45,13 +48,17 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.input.InputEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -209,6 +216,13 @@ public class PTOCalculatorApp extends Application {
             ContextMenu contextMenu = defaultEntryContextMenuFactory.call(param);
             contextMenu.getItems().remove(1);
 
+            // Make the delete option show a confirmation dialog
+            MenuItem deleteItem = (MenuItem) contextMenu.getItems().get(1);
+            deleteItem.setOnAction(evt -> {
+                // Delete the selected entry with a confirmation dialog
+                confirmDeletion(FXCollections.observableSet(param.getEntryView().getEntry()));
+            });
+
             // Ensure the projected balance popup is closed
             projectedBalancePopOver.hide();
 
@@ -241,6 +255,17 @@ public class PTOCalculatorApp extends Application {
                 return true;
             }
             return false;
+        });
+
+        // Catch the delete key to remove entries and show a confirmation dialog
+        calendarView.addEventFilter(KeyEvent.KEY_PRESSED, evt -> {
+            if (evt.getCode() == KeyCode.DELETE || evt.getCode() == KeyCode.BACK_SPACE) {
+                // Delete the selected entries with a confirmation dialog
+                confirmDeletion(calendarView.getSelections());
+
+                // Prevent the default delete action
+                evt.consume();
+            }
         });
 
         // Projected balance popover
@@ -604,6 +629,23 @@ public class PTOCalculatorApp extends Application {
      */
     private void updateCurrentBalanceLabel() {
         currentBalanceLabel.setText(String.format("Current PTO Balance: %.2f", userSettings.getCurrentBalance()));
+    }
+
+    /*
+     * Confirms deletion of selected entries.
+     */
+    private void confirmDeletion(ObservableSet<Entry<?>> entries) {
+        // Open a confirmation dialog
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        int count = entries.size();
+        alert.setTitle(count == 1 ? "Delete Entry" : "Delete Entries");
+        alert.setHeaderText("Are you sure you want to delete the selected " + (count == 1 ? "entry?" : "entries?"));
+        Optional<ButtonType> result = alert.showAndWait();
+
+        // If the user confirmed, delete the entries
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            calendar.removeEntries(entries);
+        }
     }
 
     /**

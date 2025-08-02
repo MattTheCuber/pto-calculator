@@ -1,11 +1,12 @@
 ## Musts
 
-- [ ] Fix bug with adding a second entry to the current date if there isn't enough PTO for the new entry
+- [ ] Block overlapping dates
 
 ## Shoulds
 
 - [ ] Persistent list of entries
 - [ ] Make editing the date or time not close the popover immediately
+- [ ] Add button to entries to delete them
 - [ ] Instead of removing entries when saving settings, let the user decide what to do
 - [ ] Write more tests
 
