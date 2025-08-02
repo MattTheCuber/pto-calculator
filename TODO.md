@@ -6,7 +6,6 @@
 
 - [ ] Persistent list of entries
 - [ ] Make editing the date or time not close the popover immediately
-- [ ] If the current date changes, update userSettings.currentBalance
 - [ ] Instead of removing entries when saving settings, let the user decide what to do
 - [ ] Write more tests
 
