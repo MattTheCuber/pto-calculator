@@ -533,7 +533,7 @@ public class PTOCalculatorApp extends Application {
      */
     private void changeView(Event evt) {
         // If the event is an action event (calendar switching), update the toolbar
-        if (evt instanceof ActionEvent) {
+        if (evt instanceof ActionEvent || evt instanceof RequestEvent) {
             balancePopOver.hide();
             updateToolbar();
         }
