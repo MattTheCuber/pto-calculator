@@ -188,6 +188,7 @@ public class PTOCalculatorApp extends Application {
 
         // Customize the year view single click popup to show the projected balance
         calendarView.setDateDetailsCallback(param -> {
+            // Extract the mouse event from the parameter
             InputEvent evt = param.getInputEvent();
             if (evt instanceof MouseEvent) {
                 MouseEvent mouseEvent = (MouseEvent) evt;
@@ -569,6 +570,9 @@ public class PTOCalculatorApp extends Application {
 
         // Add settings button
         leftToolBarBox.getChildren().add(0, settingsButton);
+
+        // Clear focus on the button by requesting focus on something else
+        calendarView.requestFocus();
     }
 
     /**
