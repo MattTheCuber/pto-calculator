@@ -36,6 +36,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -43,6 +44,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.input.InputEvent;
 import javafx.scene.input.MouseButton;
@@ -567,9 +570,27 @@ public class PTOCalculatorApp extends Application {
         settingsButton.setOnAction(evt -> openSettings());
         settingsButton.setMaxHeight(Double.MAX_VALUE);
         settingsButton.setGraphic(settingsIcon);
+        settingsButton.setTooltip(new Tooltip("Settings"));
 
-        // Add settings button
+        // Add the settings button
         leftToolBarBox.getChildren().add(0, settingsButton);
+
+        // Build the add entry button
+        // Reference:
+        // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/blob/c684652aa413abf35a05fbb880360ab5c8e7aa0f/CalendarFXView/src/main/java/impl/com/calendarfx/view/CalendarViewSkin.java
+        FontIcon addEntryIcon = new FontIcon(FontAwesome.PLUS);
+        addEntryIcon.getStyleClass().addAll("button-icon", "add-button-icon");
+        Button addEntryButton = new Button();
+        addEntryButton.setId("add-button");
+        addEntryButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        addEntryButton.setOnAction(evt -> openAddEntryDialog());
+        addEntryButton.setMaxHeight(Double.MAX_VALUE);
+        addEntryButton.setGraphic(addEntryIcon);
+        addEntryButton.setTooltip(new Tooltip("Add Entry"));
+
+        // Add the add entry button
+        leftToolBarBox.getChildren().add(2, new Separator(Orientation.VERTICAL));
+        leftToolBarBox.getChildren().add(3, addEntryButton);
 
         // Clear focus on the button by requesting focus on something else
         calendarView.requestFocus();
@@ -591,6 +612,24 @@ public class PTOCalculatorApp extends Application {
 
             // Remove all entries that are invalid with the new settings
             removeInvalidEntries();
+        }
+    }
+
+    private void openAddEntryDialog() {
+        // Create and open the add entry dialog
+        AddEntryDialog dialog = new AddEntryDialog(
+                primaryStage,
+                calendarView,
+                entry -> {
+                    return ptoCalculator.validateEntry(entry, getFutureEntries());
+                });
+        dialog.open();
+
+        // If the dialog was saved, update the database with the new entries
+        if (dialog.wasSaved()) {
+            // Add the new entry to the calendar and update the database
+            dialog.getEntry().setCalendar(calendar);
+            calendarView.refreshData();
         }
     }
 }

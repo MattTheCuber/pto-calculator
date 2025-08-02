@@ -1,6 +1,7 @@
 ## Musts
 
 - [ ] Persistent list of entries
+- [ ] Fix bug with adding a second entry to the current date if there isn't enough PTO for the new entry
 
 ## Shoulds
 
