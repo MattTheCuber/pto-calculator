@@ -13,4 +13,3 @@ GitHub CI (testing, releases, etc.)
 
 - [ ] ~~List of entries~~
 - [ ] Make PTO balance pop over work in all views OR disable all views except month
-- [ ] Revert entry changes if changed to invalid state instead of deleting the entry
