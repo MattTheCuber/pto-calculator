@@ -258,7 +258,7 @@ public class PTOCalculatorApp extends Application {
         });
 
         // Catch the delete key to remove entries and show a confirmation dialog
-        calendarView.addEventFilter(KeyEvent.KEY_PRESSED, evt -> {
+        calendarView.getMonthPage().getMonthView().addEventFilter(KeyEvent.KEY_PRESSED, evt -> {
             if (evt.getCode() == KeyCode.DELETE || evt.getCode() == KeyCode.BACK_SPACE) {
                 // Delete the selected entries with a confirmation dialog
                 confirmDeletion(calendarView.getSelections());
