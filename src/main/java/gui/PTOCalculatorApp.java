@@ -137,6 +137,7 @@ public class PTOCalculatorApp extends Application {
             return entry;
         });
 
+        // TODO: Make editing the date or time not close the popover immediately
         // Customize the entry details popover content for adding/editing entries
         calendarView.setEntryDetailsPopOverContentCallback(param -> {
             // Default implementation for creating the popover content
@@ -156,6 +157,9 @@ public class PTOCalculatorApp extends Application {
             box.getChildren().remove(9);
             box.getChildren().remove(8);
 
+            // Ensure the balance popup is closed
+            balancePopOver.hide();
+
             return popUp;
         });
 
@@ -166,6 +170,10 @@ public class PTOCalculatorApp extends Application {
             // Remove the calendar selection
             ContextMenu contextMenu = defaultEntryContextMenuFactory.call(param);
             contextMenu.getItems().remove(1);
+
+            // Ensure the balance popup is closed
+            balancePopOver.hide();
+
             return contextMenu;
         });
 
