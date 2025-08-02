@@ -210,6 +210,11 @@ public class PTOCalculatorApp extends Application {
 
         // Customize the month view single click popup to show the projected balance
         calendarView.getMonthPage().getMonthView().addEventHandler(MouseEvent.MOUSE_CLICKED, evt -> {
+            // If the mouse was dragged, do not open the popup
+            if (!evt.isStillSincePress()) {
+                return;
+            }
+
             // Get the month view and the date at the clicked position
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
