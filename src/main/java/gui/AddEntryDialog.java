@@ -10,14 +10,11 @@ import com.calendarfx.model.Calendar;
 import com.calendarfx.model.Entry;
 import com.calendarfx.model.Interval;
 import com.calendarfx.view.DateControl;
-import com.calendarfx.view.TimeField;
 import com.calendarfx.view.popover.EntryDetailsView;
 
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -35,11 +32,6 @@ public class AddEntryDialog {
     private final VBox vbox;
 
     private EntryDetailsView details;
-    private CheckBox fullDayCheck;
-    private DatePicker startDatePicker;
-    private DatePicker endDatePicker;
-    private TimeField startTimeField;
-    private TimeField endTimeField;
 
     /**
      * Creates a new AddEntryDialog.
@@ -61,7 +53,7 @@ public class AddEntryDialog {
         // Create the scene and stage
         Scene scene = new Scene(vbox);
         stage = new Stage();
-        stage.setTitle("PTO Configuration");
+        stage.setTitle("Add Entry");
         stage.getIcons().add(new Image(getClass().getResourceAsStream("/icon.png")));
         stage.initOwner(parent);
         stage.initModality(Modality.WINDOW_MODAL);
@@ -87,14 +79,6 @@ public class AddEntryDialog {
         box.getColumnConstraints().get(0).setPrefWidth(75);
         box.getChildren().remove(9);
         box.getChildren().remove(8);
-
-        HBox startDateBox = (HBox) box.getChildren().get(3);
-        HBox endDateBox = (HBox) box.getChildren().get(5);
-        fullDayCheck = (CheckBox) box.getChildren().get(1);
-        startDatePicker = (DatePicker) startDateBox.getChildren().get(0);
-        endDatePicker = (DatePicker) endDateBox.getChildren().get(0);
-        startTimeField = (TimeField) startDateBox.getChildren().get(1);
-        endTimeField = (TimeField) endDateBox.getChildren().get(1);
 
         // Create buttons
         Button cancelButton = new Button("Cancel");
