@@ -68,6 +68,8 @@ public class PTOCalculatorApp extends Application {
     PopOver balancePopOver;
     Label balanceLabel;
 
+    private boolean firstInvalid = false;
+
     /**
      * Main method to run the application.
      * 
@@ -280,14 +282,31 @@ public class PTOCalculatorApp extends Application {
         // Fetch all vacation entries from the database
         List<Entry<?>> entries = ptoDatabase.getVacations();
 
+        // Add the valid entries to the calendar
+        calendar.addEntries(entries);
+        System.out.println("Loaded " + entries.size() + " entries from the database.");
+
+        // Remove invalid entries from the calendar and database
+        removeInvalidEntries();
+    }
+
+    /**
+     * Removes invalid entries from the calendar and database.
+     */
+    private void removeInvalidEntries() {
+        // Get all entries starting from today
+        List<Entry<?>> entries = getAllEntries();
+
         // Validate the entries and remove any invalid ones
         int invalidCount = 0;
         Iterator<Entry<?>> iterator = entries.iterator();
         while (iterator.hasNext()) {
             Entry<?> entry = iterator.next();
             // If the entry is invalid, remove it from the list
-            if (!ptoCalculator.validateEntry(entry, getFutureEntries())) {
+            if (!entry.getEndDate().isBefore(LocalDate.now())
+                    && !ptoCalculator.validateEntry(entry, getFutureEntries())) {
                 iterator.remove();
+                calendar.removeEntry(entry);
                 invalidCount++;
             }
         }
@@ -303,10 +322,6 @@ public class PTOCalculatorApp extends Application {
                     + " invalid entries stored in the database. They have been removed from the calendar.");
             alert.show();
         }
-
-        // Add the valid entries to the calendar
-        calendar.addEntries(entries);
-        System.out.println("Loaded " + entries.size() + " entries from the database.");
     }
 
     /**
@@ -400,17 +415,49 @@ public class PTOCalculatorApp extends Application {
         }
 
         // If the entry is invalid
-        // TODO: Revert entry changes if not new
         // TODO: Make this only include entries up to the entry date
-        if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), getFutureEntries())) {
-            // Remove the entry from the calendar
-            evt.getEntry().setCalendar(null);
+        List<Entry<?>> entries = getFutureEntries();
+        if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), entries)) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+
+            // If the entry was added
+            if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
+                // Remove the entry from the calendar
+                evt.getEntry().removeFromCalendar();
+            }
+            // Entry full day property changes
+            else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
+                // Remove the entry from the calendar
+                evt.getEntry().removeFromCalendar();
+
+                // Create a new entry with the old interval
+                Entry<Object> entry = new Entry<>(
+                        evt.getEntry().getTitle(),
+                        evt.getEntry().getInterval(),
+                        evt.getEntry().getId());
+                entry.setFullDay(!evt.getEntry().isFullDay()); // Can't use getOldFullDay() here because it's broken
+                calendar.addEntry(entry);
+            }
+            // Entry interval property changes
+            else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+                // Remove the entry from the calendar
+                evt.getEntry().removeFromCalendar();
+
+                // Create a new entry with the old interval
+                Entry<Object> entry = new Entry<>(
+                        evt.getEntry().getTitle(),
+                        evt.getOldInterval(),
+                        evt.getEntry().getId());
+                entry.setFullDay(evt.getEntry().isFullDay());
+                calendar.addEntry(entry);
+            }
 
             // Show an alert to the user
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Invalid Entry");
+            boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
+            alert.setTitle(isNew ? "Invalid Entry" : "Invalid Entry Change");
             alert.setHeaderText("Not enough PTO balance");
-            alert.setContentText("You will not have enough PTO balance to take this day off!");
+            alert.setContentText(isNew ? "You will not have enough PTO balance to take this day off!"
+                    : "You will not have enough PTO balance to make this change!");
             alert.showAndWait();
         } else {
             // Otherwise, update the database with the current entries
@@ -501,9 +548,13 @@ public class PTOCalculatorApp extends Application {
 
         // If the dialog was saved, apply the changes to user settings
         if (dialog.wasSaved()) {
+            // Apply the changes to user settings and update the database
             dialog.applyTo(userSettings);
             ptoDatabase.updateUserSettings(userSettings);
-            // TODO: Refresh UI and validate entries
+
+            // TODO: Instead of removing entries, let the user decide what to do
+            // Remove all entries that are invalid with the new settings
+            removeInvalidEntries();
         }
     }
 }

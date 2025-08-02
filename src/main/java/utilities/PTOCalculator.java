@@ -104,7 +104,7 @@ public class PTOCalculator {
                 double days = overlappingDays(entry.getStartDate(), entry.getEndDate(), targetDate);
                 accruedPto -= days * 8;
             } else if (targetDate.isAfter(entry.getStartDate())) {
-                accruedPto -= entry.getDuration().toHours();
+                accruedPto -= entry.isFullDay() ? 8 : entry.getDuration().toHours();
             }
         }
 
@@ -154,7 +154,8 @@ public class PTOCalculator {
             } else {
                 // For single-day entries, check if the balance is sufficient for the entry
                 // duration
-                return computeBalanceAtDate(entry.getStartDate(), entries) >= entry.getDuration().toHours();
+                double hours = entry.isFullDay() ? 8 : entry.getDuration().toHours();
+                return computeBalanceAtDate(entry.getStartDate(), entries) >= hours;
             }
         } else {
             return true;
