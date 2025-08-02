@@ -4,7 +4,7 @@
 
 ## Demo
 
-![Demonstration](.\docs\images\demonstration.png)
+![Demonstration](docs/images/demonstration.png)
 
 ## Installation
 
