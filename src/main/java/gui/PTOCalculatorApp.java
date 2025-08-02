@@ -22,6 +22,7 @@ import com.calendarfx.model.CalendarEvent;
 import com.calendarfx.model.CalendarSource;
 import com.calendarfx.model.Entry;
 import com.calendarfx.view.CalendarView;
+import com.calendarfx.view.CalendarView.Page;
 import com.calendarfx.view.DateControl.CreateEntryParameter;
 import com.calendarfx.view.DateControl.EntryContextMenuParameter;
 import com.calendarfx.view.MonthView;
@@ -93,7 +94,7 @@ public class PTOCalculatorApp extends Application {
         ptoCalculator = new PTOCalculator(userSettings);
 
         // Create the main calendar view
-        calendarView = new CalendarView();
+        calendarView = new CalendarView(Page.MONTH, Page.YEAR);
 
         // Set the current date and time for the calendar view
         calendarView.setRequestedTime(LocalTime.now());
