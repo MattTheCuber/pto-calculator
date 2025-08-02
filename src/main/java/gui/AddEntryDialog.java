@@ -26,7 +26,7 @@ import javafx.util.Callback;
 
 public class AddEntryDialog {
     private boolean saved = false;
-    Callback<Entry<?>, Boolean> validationCallback;
+    Callback<Entry<?>, String> validationCallback;
 
     private final Stage stage;
     private final VBox vbox;
@@ -39,7 +39,7 @@ public class AddEntryDialog {
      * @param parent      the parent window for this dialog
      * @param dateControl the date control object for the calendar view
      */
-    public AddEntryDialog(Window parent, DateControl dateControl, Callback<Entry<?>, Boolean> validationCallback) {
+    public AddEntryDialog(Window parent, DateControl dateControl, Callback<Entry<?>, String> validationCallback) {
         this.validationCallback = validationCallback;
 
         // Initialize the dialog layout
@@ -107,12 +107,12 @@ public class AddEntryDialog {
      */
     private void onSave() {
         // If there is a validation error, cancel and show an alert to the user
-        if (!validationCallback.call(getEntry())) {
+        String validationError = validationCallback.call(getEntry());
+        if (validationError != null) {
             // Show an alert with the validation error
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Invalid Entry");
-            alert.setHeaderText("Not enough PTO balance");
-            alert.setContentText("You will not have enough PTO balance to take this day off!");
+            alert.setHeaderText(validationError);
             alert.showAndWait();
         } else {
             saved = true;

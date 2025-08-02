@@ -479,7 +479,12 @@ public class PTOCalculatorApp extends Application {
         // If the entry is invalid
         List<Entry<?>> entries = entriesHelper.getDateEntries(LocalDate.now(),
                 evt.getEntry().getInterval().getEndDate());
-        if (evt.getEntry().getCalendar() != null && !ptoCalculator.validateEntry(evt.getEntry(), entries)) {
+
+        // Check if the entry intersects with any existing entries
+        boolean intersects = entriesHelper.intersects(evt.getEntry());
+
+        if (evt.getEntry().getCalendar() != null
+                && (intersects || !ptoCalculator.validateEntry(evt.getEntry(), entries))) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
 
             // If the entry was added
@@ -516,10 +521,12 @@ public class PTOCalculatorApp extends Application {
 
             // Show an alert to the user
             boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-            alert.setTitle(isNew ? "Invalid Entry" : "Invalid Entry Change");
-            alert.setHeaderText("Not enough PTO balance");
-            alert.setContentText(isNew ? "You will not have enough PTO balance to take this day off!"
-                    : "You will not have enough PTO balance to make this change!");
+            alert.setTitle(intersects ? "Conflicting Entry" : isNew ? "Invalid Entry" : "Invalid Entry Change");
+            alert.setHeaderText(intersects ? "Entry intersects with an existing entry" : "Not enough PTO balance");
+            alert.setContentText(
+                    intersects ? "You cannot take this day off because it conflicts with an existing entry."
+                            : isNew ? "You will not have enough PTO balance to take this day off!"
+                                    : "You will not have enough PTO balance to make this change!");
             alert.showAndWait();
         } else {
             // Otherwise, update the database with the current entries
@@ -678,7 +685,16 @@ public class PTOCalculatorApp extends Application {
         AddEntryDialog dialog = new AddEntryDialog(
                 primaryStage,
                 calendarView,
-                entry -> ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries()));
+                entry -> {
+                    // Check if the entry intersects with any existing entries
+                    boolean intersects = entriesHelper.intersects(entry);
+
+                    // Check if the entry is valid
+                    boolean isValid = ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries());
+
+                    return intersects ? "Entry intersects with an existing entry."
+                            : isValid ? null : "You will not have enough PTO balance to take this day off!";
+                });
         dialog.open();
 
         // If the dialog was saved, update the database with the new entries
