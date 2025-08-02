@@ -22,16 +22,14 @@ public enum AccrualPeriod {
      */
     public static int getDaysInPeriod(AccrualPeriod period) {
         switch (period) {
-            case DAILY:
-                return 1;
-            case WEEKLY:
-                return 7;
-            case MONTHLY:
-                return 30;
             case YEARLY:
                 return 365;
-            default:
-                throw new IllegalArgumentException("Unknown accrual period: " + period);
+            case MONTHLY:
+                return 30;
+            case WEEKLY:
+                return 7;
+            default: // DAILY
+                return 1;
         }
     }
 }
