@@ -15,6 +15,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -79,8 +80,11 @@ public class SettingsDialog {
      * @param userSettings the user settings to initialize the controls with
      */
     private void createControls(UserSettings userSettings) {
+        Label descriptionLabel = new Label("All numeric fields are in hours.");
+
         // Current Balance
         Label balanceLabel = new Label("Current Balance:");
+        balanceLabel.setTooltip(new Tooltip("Your current PTO balance in hours."));
         balanceSpinner = new Spinner<>(0, 1000000, userSettings.getCurrentBalance(), 1);
         balanceSpinner.setEditable(true);
         balanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -89,6 +93,7 @@ public class SettingsDialog {
             }
             validateFields();
         });
+        balanceSpinner.setTooltip(new Tooltip("Your current PTO balance in hours."));
 
         // Group current balance label and spinner
         HBox balanceBox = new HBox(8, balanceLabel, balanceSpinner);
@@ -96,6 +101,7 @@ public class SettingsDialog {
 
         // Accrual Rate
         Label accrualRateLabel = new Label("Accrual Rate:");
+        accrualRateLabel.setTooltip(new Tooltip("Your PTO accrual rate in hours per period."));
         accrualRateSpinner = new Spinner<>(0, 1000000, userSettings.getAccrualRate(), 0.1);
         accrualRateSpinner.setEditable(true);
         accrualRateSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -104,6 +110,7 @@ public class SettingsDialog {
             }
             validateFields();
         });
+        accrualRateSpinner.setTooltip(new Tooltip("The PTO accrual rate in hours."));
 
         // Accrual Period
         accrualPeriodCombo = new ComboBox<>();
@@ -121,6 +128,7 @@ public class SettingsDialog {
         });
         accrualPeriodCombo.getItems().addAll(AccrualPeriod.values());
         accrualPeriodCombo.setValue(userSettings.getAccrualPeriod());
+        accrualPeriodCombo.setTooltip(new Tooltip("The period for applying PTO accrual."));
 
         // Group accrual fields
         HBox accrualBox = new HBox(8, accrualRateLabel, accrualRateSpinner, accrualPeriodCombo);
@@ -128,6 +136,7 @@ public class SettingsDialog {
 
         // Max Balance
         Label maxBalanceLabel = new Label("Max Balance:");
+        maxBalanceLabel.setTooltip(new Tooltip("Your maximum PTO balance in hours."));
         maxBalanceSpinner = new Spinner<>(0, 1000000, userSettings.getMaxBalance(), 1);
         maxBalanceSpinner.setEditable(true);
         maxBalanceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -136,6 +145,7 @@ public class SettingsDialog {
             }
             validateFields();
         });
+        maxBalanceSpinner.setTooltip(new Tooltip("Your maximum PTO balance in hours."));
 
         // Disable max balance
         maxBalanceDisableCheck = new CheckBox("Disable");
@@ -153,6 +163,8 @@ public class SettingsDialog {
 
         // Carry Over Limit
         Label carryOverLabel = new Label("Carry Over Limit:");
+        carryOverLabel.setTooltip(
+                new Tooltip("The maximum PTO hours that can be carried over each year on the specified date."));
         carryOverLabel.setMinWidth(88);
         carryOverSpinner = new Spinner<>(0, 1000000, userSettings.getCarryOverLimit(), 1);
         carryOverSpinner.setEditable(true);
@@ -162,14 +174,17 @@ public class SettingsDialog {
             }
             validateFields();
         });
+        carryOverSpinner.setTooltip(new Tooltip("The maximum PTO hours that can be carried over."));
 
         // Expiration Date
         Label expirationLabel = new Label("Expiration Date:");
+        expirationLabel.setTooltip(new Tooltip("The date when PTO hours expire."));
         expirationLabel.setMinWidth(84);
         LocalDate expirationDate = userSettings.getExpirationDate() == null ? null
                 : userSettings.getExpirationDate().atYear(LocalDate.now().getYear());
         expirationPicker = new DatePicker(expirationDate);
         expirationPicker.valueProperty().addListener((obs, oldVal, newVal) -> validateFields());
+        expirationPicker.setTooltip(new Tooltip("The date when PTO hours expire."));
 
         // Disable carry over
         carryOverDisableCheck = new CheckBox("Disable");
@@ -188,7 +203,7 @@ public class SettingsDialog {
         VBox carryOverContainer = new VBox(4, carryOverDisableCheck, carryOverBox);
 
         // Create buttons
-        Button resetButton = new Button("Reset to Defaults");
+        Button resetButton = new Button("Reset to defaults");
         resetButton.setOnAction(event -> onReset());
         Button cancelButton = new Button("Cancel");
         cancelButton.setOnAction(event -> onCancel());
@@ -204,6 +219,7 @@ public class SettingsDialog {
 
         // Add controls to vbox
         vbox.getChildren().addAll(
+                descriptionLabel,
                 balanceBox,
                 accrualBox,
                 maxBalanceContainer,
