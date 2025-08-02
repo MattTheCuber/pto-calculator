@@ -2,6 +2,10 @@
 
 [![JUnit Tests with Maven](https://github.com/MattTheCuber/pto-calculator/actions/workflows/maven.yml/badge.svg)](https://github.com/MattTheCuber/pto-calculator/actions/workflows/maven.yml)
 
+## Demo
+
+![Demonstration](docs\images\demonstration.png)
+
 ## Installation
 
 1. Install [JDK](https://www.oracle.com/java/technologies/downloads/) (make sure its in your `PATH`).
