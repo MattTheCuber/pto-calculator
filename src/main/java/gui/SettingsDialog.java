@@ -17,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -187,14 +188,18 @@ public class SettingsDialog {
         VBox carryOverContainer = new VBox(4, carryOverDisableCheck, carryOverBox);
 
         // Create buttons
+        Button resetButton = new Button("Reset to Defaults");
+        resetButton.setOnAction(event -> onReset());
         Button cancelButton = new Button("Cancel");
         cancelButton.setOnAction(event -> onCancel());
         Button saveButton = new Button("Save");
         saveButton.setOnAction(event -> onSave());
 
-        // Group buttons
-        HBox buttonBox = new HBox(8, saveButton, cancelButton);
-        buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        // Group buttons with a spacer
+        Region spacer = new Region();
+        HBox buttonBox = new HBox(8, resetButton, spacer, saveButton, cancelButton);
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+        buttonBox.setAlignment(javafx.geometry.Pos.CENTER);
         buttonBox.setPadding(new javafx.geometry.Insets(8, 0, 0, 0));
 
         // Add controls to vbox
@@ -204,6 +209,22 @@ public class SettingsDialog {
                 maxBalanceContainer,
                 carryOverContainer,
                 buttonBox);
+    }
+
+    /**
+     * Handles the reset to defaults action.
+     */
+    private void onReset() {
+        // Reset fields to default values
+        balanceSpinner.getValueFactory().setValue(0.0);
+        accrualRateSpinner.getValueFactory().setValue(0.0);
+        accrualPeriodCombo.setValue(AccrualPeriod.WEEKLY);
+        maxBalanceDisableCheck.setSelected(true);
+        carryOverDisableCheck.setSelected(true);
+        maxBalanceSpinner.getValueFactory().setValue(0.0);
+        carryOverSpinner.getValueFactory().setValue(0.0);
+        expirationPicker.setValue(null);
+        validateFields();
     }
 
     /**
