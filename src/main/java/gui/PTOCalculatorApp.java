@@ -6,9 +6,11 @@ package gui;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.controlsfx.control.PopOver;
@@ -363,7 +365,10 @@ public class PTOCalculatorApp extends Application {
      */
     private void accruePto(LocalDate lastUpdate) {
         // Compute the accrued PTO since the last update
-        List<Entry<?>> entries = entriesHelper.getDateEntries(lastUpdate);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                lastUpdate,
+                LocalDate.MAX,
+                ZoneId.systemDefault());
         double originalBalance = userSettings.getCurrentBalance();
         double newBalance = ptoCalculator.computeAccruedBalance(lastUpdate, LocalDate.now(), entries);
 
@@ -424,10 +429,21 @@ public class PTOCalculatorApp extends Application {
         int invalidCount = 0;
         Iterator<Entry<?>> iterator = entries.iterator();
         while (iterator.hasNext()) {
+            // Get the current entry
             Entry<?> entry = iterator.next();
+
+            // Check if the entry intersects with any existing entries
+            boolean intersects = entriesHelper.intersects(entry);
+
+            // Get future entries to validate against
+            Map<LocalDate, List<Entry<?>>> futureEntries = calendar.findEntries(
+                    LocalDate.now(),
+                    LocalDate.MAX,
+                    ZoneId.systemDefault());
+
             // If the entry is invalid, remove it from the list
             if (!entry.getEndDate().isBefore(LocalDate.now())
-                    && !ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries())) {
+                    && (intersects || !ptoCalculator.validateEntry(entry, futureEntries))) {
                 iterator.remove();
                 calendar.removeEntry(entry);
                 invalidCount++;
@@ -476,13 +492,16 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
 
-        // If the entry is invalid
-        List<Entry<?>> entries = entriesHelper.getDateEntries(LocalDate.now(),
-                evt.getEntry().getInterval().getEndDate());
+        // Get the entries
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                LocalDate.now(),
+                evt.getEntry().getInterval().getEndDate(),
+                ZoneId.systemDefault());
 
         // Check if the entry intersects with any existing entries
         boolean intersects = entriesHelper.intersects(evt.getEntry());
 
+        // If the entry is invalid
         if (evt.getEntry().getCalendar() != null
                 && (intersects || !ptoCalculator.validateEntry(evt.getEntry(), entries))) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -545,7 +564,11 @@ public class PTOCalculatorApp extends Application {
             // If the date is in the future
             if (date != null && !date.isBefore(LocalDate.now())) {
                 // Compute the projected PTO balance at the start of the date
-                double balance = ptoCalculator.computeBalanceAtDate(date, entriesHelper.getFutureEntries());
+                Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                        LocalDate.now(),
+                        LocalDate.MAX,
+                        ZoneId.systemDefault());
+                double balance = ptoCalculator.computeBalanceAtDate(date, entries);
 
                 // Show the projected balance in the popover
                 projectedBalanceLabel.setText(String.format("Projected PTO balance (start of date): %.2f", balance));
@@ -690,7 +713,11 @@ public class PTOCalculatorApp extends Application {
                     boolean intersects = entriesHelper.intersects(entry);
 
                     // Check if the entry is valid
-                    boolean isValid = ptoCalculator.validateEntry(entry, entriesHelper.getFutureEntries());
+                    Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                            LocalDate.now(),
+                            LocalDate.MAX,
+                            ZoneId.systemDefault());
+                    boolean isValid = ptoCalculator.validateEntry(entry, entries);
 
                     return intersects ? "Entry intersects with an existing entry."
                             : isValid ? null : "You will not have enough PTO balance to take this day off!";
