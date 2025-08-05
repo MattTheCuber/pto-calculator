@@ -475,6 +475,69 @@ public class PTOCalculatorApp extends Application {
      * @param evt The calendar event to handle.
      */
     private void eventHandler(CalendarEvent evt) {
+        // Log the calendar event to the console
+        logCalendarEvent(evt);
+
+        // Check if the entry is in the future and has a calendar
+        boolean isInPast = evt.getEntry().getEndDate().isBefore(LocalDate.now());
+        boolean hasCalendar = evt.getEntry().getCalendar() != null;
+        if (hasCalendar && !isInPast) {
+            // Get the entries
+            Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                    LocalDate.now(),
+                    evt.getEntry().getInterval().getEndDate(),
+                    ZoneId.systemDefault());
+
+            // If the entry intersects with any existing entries
+            if (entriesHelper.intersects(evt.getEntry())) {
+                // Revert the changes made to the entry
+                revertCalendarEvent(evt);
+
+                // Show an alert to the user
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Conflicting Entry");
+                alert.setHeaderText("Entry intersects with an existing entry");
+                alert.setContentText(
+                        "You cannot take this day off because it conflicts with an existing entry.");
+                alert.showAndWait();
+
+                // Do not update the database since the change was reverted
+                return;
+            }
+            // If the entry is invalid
+            else if (!ptoCalculator.validateEntry(evt.getEntry(), entries)) {
+                // Revert the changes made to the entry
+                revertCalendarEvent(evt);
+
+                // Show an alert to the user
+                boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setHeaderText("Not enough PTO balance");
+                if (isNew) {
+                    alert.setTitle("Invalid Entry");
+                    alert.setContentText("You will not have enough PTO balance to take this day off!");
+                } else {
+                    alert.setTitle("Invalid Entry Change");
+                    alert.setContentText("You will not have enough PTO balance to make this change!");
+                }
+                alert.showAndWait();
+
+                // Do not update the database since the change was reverted
+                return;
+            }
+        }
+
+        // Update the database with the current entries
+        ptoDatabase.updateVacations(entriesHelper.getAllEntries());
+    }
+
+    /**
+     * Logs the calendar event to the console.
+     * 
+     * @param evt The calendar event to log.
+     */
+    private void logCalendarEvent(CalendarEvent evt) {
+
         // Added or removed entries
         if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
             if (evt.getEntry().getCalendar() != null) {
@@ -497,74 +560,45 @@ public class PTOCalculatorApp extends Application {
         else if (evt.getEventType().equals(CalendarEvent.ENTRY_TITLE_CHANGED)) {
             System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
+    }
 
-        boolean isInPast = evt.getEntry().getEndDate().isBefore(LocalDate.now());
-        boolean hasCalendar = evt.getEntry().getCalendar() != null;
-        if (hasCalendar && !isInPast) {
-            // Get the entries
-            Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
-                    LocalDate.now(),
-                    evt.getEntry().getInterval().getEndDate(),
-                    ZoneId.systemDefault());
-
-            // Check if the entry intersects with any existing entries
-            boolean intersects = entriesHelper.intersects(evt.getEntry());
-
-            // If the entry is invalid
-            if (evt.getEntry().getCalendar() != null
-                    && !evt.getEntry().getEndDate().isBefore(LocalDate.now())
-                    && (intersects || !ptoCalculator.validateEntry(evt.getEntry(), entries))) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-
-                // If the entry was added
-                if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
-                    // Remove the entry from the calendar
-                    evt.getEntry().removeFromCalendar();
-                }
-                // Entry full day property changes
-                else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
-                    // Remove the entry from the calendar
-                    evt.getEntry().removeFromCalendar();
-
-                    // Create a new entry with the old interval
-                    Entry<Object> entry = new Entry<>(
-                            evt.getEntry().getTitle(),
-                            evt.getEntry().getInterval(),
-                            evt.getEntry().getId());
-                    entry.setFullDay(!evt.getEntry().isFullDay()); // Can't use getOldFullDay() here because it's broken
-                    calendar.addEntry(entry);
-                }
-                // Entry interval property changes
-                else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
-                    // Remove the entry from the calendar
-                    evt.getEntry().removeFromCalendar();
-
-                    // Create a new entry with the old interval
-                    Entry<Object> entry = new Entry<>(
-                            evt.getEntry().getTitle(),
-                            evt.getOldInterval(),
-                            evt.getEntry().getId());
-                    entry.setFullDay(evt.getEntry().isFullDay());
-                    calendar.addEntry(entry);
-                }
-
-                // Show an alert to the user
-                boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-                alert.setTitle(intersects ? "Conflicting Entry" : isNew ? "Invalid Entry" : "Invalid Entry Change");
-                alert.setHeaderText(intersects ? "Entry intersects with an existing entry" : "Not enough PTO balance");
-                alert.setContentText(
-                        intersects ? "You cannot take this day off because it conflicts with an existing entry."
-                                : isNew ? "You will not have enough PTO balance to take this day off!"
-                                        : "You will not have enough PTO balance to make this change!");
-                alert.showAndWait();
-
-                // Do not update the database since the entry was not added/changed
-                return;
-            }
+    /**
+     * Reverts the changes made to an entry based on the calendar event.
+     * 
+     * @param evt The calendar event that triggered the revert.
+     */
+    private void revertCalendarEvent(CalendarEvent evt) {
+        // If the entry was added
+        if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
+            // Remove the entry from the calendar
+            evt.getEntry().removeFromCalendar();
         }
+        // Entry full day property changes
+        else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
+            // Remove the entry from the calendar
+            evt.getEntry().removeFromCalendar();
 
-        // Update the database with the current entries
-        ptoDatabase.updateVacations(entriesHelper.getAllEntries());
+            // Create a new entry with the old interval
+            Entry<Object> entry = new Entry<>(
+                    evt.getEntry().getTitle(),
+                    evt.getEntry().getInterval(),
+                    evt.getEntry().getId());
+            entry.setFullDay(!evt.getEntry().isFullDay()); // Can't use getOldFullDay() here because it's broken
+            calendar.addEntry(entry);
+        }
+        // Entry interval property changes
+        else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+            // Remove the entry from the calendar
+            evt.getEntry().removeFromCalendar();
+
+            // Create a new entry with the old interval
+            Entry<Object> entry = new Entry<>(
+                    evt.getEntry().getTitle(),
+                    evt.getOldInterval(),
+                    evt.getEntry().getId());
+            entry.setFullDay(evt.getEntry().isFullDay());
+            calendar.addEntry(entry);
+        }
     }
 
     /**
