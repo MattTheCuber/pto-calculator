@@ -4,15 +4,15 @@
 
 package gui;
 
-import java.time.LocalDate;
+import java.time.Month;
 import java.time.MonthDay;
+import java.time.YearMonth;
 
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.Tooltip;
@@ -44,7 +44,8 @@ public class SettingsDialog {
     private CheckBox maxBalanceDisableCheck;
     private Spinner<Double> carryOverSpinner;
     private CheckBox carryOverDisableCheck;
-    private DatePicker expirationPicker;
+    private ComboBox<String> expirationMonthComboBox;
+    private ComboBox<Integer> expirationDayComboBox;
 
     /**
      * Creates a new SettingsDialog with the user settings.
@@ -180,25 +181,53 @@ public class SettingsDialog {
         Label expirationLabel = new Label("Expiration Date:");
         expirationLabel.setTooltip(new Tooltip("The date when PTO hours expire."));
         expirationLabel.setMinWidth(84);
-        LocalDate expirationDate = userSettings.getExpirationDate() == null ? null
-                : userSettings.getExpirationDate().atYear(LocalDate.now().getYear());
-        expirationPicker = new DatePicker(expirationDate);
-        expirationPicker.valueProperty().addListener((obs, oldVal, newVal) -> validateFields());
-        expirationPicker.setTooltip(new Tooltip("The date when PTO hours expire."));
+        MonthDay expirationDate = userSettings.getExpirationDate();
+        expirationMonthComboBox = new ComboBox<>();
+        expirationMonthComboBox
+                .setValue(expirationDate != null ? expirationDate.getMonth().name() : Month.JANUARY.name());
+        expirationMonthComboBox.setTooltip(new Tooltip("The month when PTO hours expire."));
+        for (Month month : Month.values()) {
+            expirationMonthComboBox.getItems().add(month.name());
+        }
+        expirationMonthComboBox.setConverter(new StringConverter<String>() {
+            @Override
+            public String toString(String month) {
+                return month.substring(0, 1).toUpperCase() + month.substring(1).toLowerCase();
+            }
+
+            @Override
+            public String fromString(String string) {
+                return string.toUpperCase();
+            }
+        });
+        expirationDayComboBox = new ComboBox<>();
+        expirationDayComboBox.setValue(expirationDate == null ? 1 : expirationDate.getDayOfMonth());
+        expirationDayComboBox.setTooltip(new Tooltip("The day when PTO hours expire."));
+        expirationMonthComboBox.setOnAction(e -> {
+            int selectedIndex = expirationMonthComboBox.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                updateExpirationDays();
+            }
+            validateFields();
+        });
+        updateExpirationDays();
 
         // Disable carry over
         carryOverDisableCheck = new CheckBox("Disable");
         carryOverDisableCheck.setSelected(userSettings.getCarryOverLimit() == 0.0);
         carryOverSpinner.setDisable(carryOverDisableCheck.isSelected());
-        expirationPicker.setDisable(carryOverDisableCheck.isSelected());
+        expirationMonthComboBox.setDisable(carryOverDisableCheck.isSelected());
+        expirationDayComboBox.setDisable(carryOverDisableCheck.isSelected());
         carryOverDisableCheck.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             carryOverSpinner.setDisable(isSelected);
-            expirationPicker.setDisable(isSelected);
+            expirationMonthComboBox.setDisable(isSelected);
+            expirationDayComboBox.setDisable(isSelected);
             validateFields();
         });
 
         // Group carry over fields
-        HBox carryOverBox = new HBox(8, carryOverLabel, carryOverSpinner, expirationLabel, expirationPicker);
+        HBox carryOverBox = new HBox(8,
+                carryOverLabel, carryOverSpinner, expirationLabel, expirationMonthComboBox, expirationDayComboBox);
         carryOverBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         VBox carryOverContainer = new VBox(4, carryOverDisableCheck, carryOverBox);
 
@@ -228,6 +257,22 @@ public class SettingsDialog {
     }
 
     /**
+     * Updates the expiration day combo box based on the selected month.
+     */
+    private void updateExpirationDays() {
+        // Get the selected month and calculate the number of days in that month
+        int monthIndex = expirationMonthComboBox.getSelectionModel().getSelectedIndex() + 1;
+        YearMonth ym = YearMonth.of(2025, monthIndex); // Using 2025 to exclude leap day
+        int daysInMonth = ym.lengthOfMonth();
+
+        // Clear existing items and populate with days for the selected month
+        expirationDayComboBox.getItems().clear();
+        for (int i = 1; i <= daysInMonth; i++) {
+            expirationDayComboBox.getItems().add(i);
+        }
+    }
+
+    /**
      * Handles the reset to defaults action.
      */
     private void onReset() {
@@ -239,7 +284,8 @@ public class SettingsDialog {
         carryOverDisableCheck.setSelected(true);
         maxBalanceSpinner.getValueFactory().setValue(0.0);
         carryOverSpinner.getValueFactory().setValue(0.0);
-        expirationPicker.setValue(null);
+        expirationMonthComboBox.setValue(Month.JANUARY.name());
+        expirationDayComboBox.setValue(1);
         validateFields();
     }
 
@@ -295,11 +341,17 @@ public class SettingsDialog {
                 && (carryOverSpinner.getValue() == null || carryOverSpinner.getValue() <= 0)) {
             validationError = "Carry Over Limit must be greater than 0";
         }
-        // Expiration date must be set if carry over is enabled
-        else if (!carryOverDisableCheck.isSelected() && expirationPicker.getValue() == null) {
-            validationError = "Expiration Date must be set";
-        } else {
-            validationError = null; // Reset error
+        // Expiration month must be set if carry over is enabled
+        else if (!carryOverDisableCheck.isSelected() && expirationMonthComboBox.getValue() == null) {
+            validationError = "Expiration Month must be set";
+        }
+        // Expiration day must be set if carry over is enabled
+        else if (!carryOverDisableCheck.isSelected() && expirationDayComboBox.getValue() == null) {
+            validationError = "Expiration Day must be set";
+        }
+        // Reset error
+        else {
+            validationError = null;
         }
     }
 
@@ -328,9 +380,15 @@ public class SettingsDialog {
         userSettings.setCurrentBalance(balanceSpinner.getValue());
         userSettings.setAccrualRate(accrualRateSpinner.getValue());
         userSettings.setAccrualPeriod(accrualPeriodCombo.getValue());
-        userSettings.setMaxBalance(maxBalanceDisableCheck.isSelected() ? 0.0 : maxBalanceSpinner.getValue());
-        userSettings.setCarryOverLimit(carryOverDisableCheck.isSelected() ? 0.0 : carryOverSpinner.getValue());
-        userSettings.setExpirationDate(
-                expirationPicker.getValue() == null ? null : MonthDay.from(expirationPicker.getValue()));
+        if (maxBalanceDisableCheck.isSelected()) {
+            userSettings.setMaxBalance(maxBalanceSpinner.getValue());
+        }
+        if (carryOverDisableCheck.isSelected()) {
+            userSettings.setCarryOverLimit(carryOverSpinner.getValue());
+            MonthDay monthDay = MonthDay.of(
+                    Month.valueOf(expirationMonthComboBox.getValue()),
+                    expirationDayComboBox.getValue());
+            userSettings.setExpirationDate(monthDay);
+        }
     }
 }
