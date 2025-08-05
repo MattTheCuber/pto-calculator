@@ -498,65 +498,73 @@ public class PTOCalculatorApp extends Application {
             System.out.println("Entry title changed to " + evt.getEntry().getTitle());
         }
 
-        // Get the entries
-        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
-                LocalDate.now(),
-                evt.getEntry().getInterval().getEndDate(),
-                ZoneId.systemDefault());
+        boolean isInPast = evt.getEntry().getEndDate().isBefore(LocalDate.now());
+        boolean hasCalendar = evt.getEntry().getCalendar() != null;
+        if (hasCalendar && !isInPast) {
+            // Get the entries
+            Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
+                    LocalDate.now(),
+                    evt.getEntry().getInterval().getEndDate(),
+                    ZoneId.systemDefault());
 
-        // Check if the entry intersects with any existing entries
-        boolean intersects = entriesHelper.intersects(evt.getEntry());
+            // Check if the entry intersects with any existing entries
+            boolean intersects = entriesHelper.intersects(evt.getEntry());
 
-        // If the entry is invalid
-        if (evt.getEntry().getCalendar() != null
-                && (intersects || !ptoCalculator.validateEntry(evt.getEntry(), entries))) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
+            // If the entry is invalid
+            if (evt.getEntry().getCalendar() != null
+                    && !evt.getEntry().getEndDate().isBefore(LocalDate.now())
+                    && (intersects || !ptoCalculator.validateEntry(evt.getEntry(), entries))) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
 
-            // If the entry was added
-            if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
-                // Remove the entry from the calendar
-                evt.getEntry().removeFromCalendar();
+                // If the entry was added
+                if (evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED)) {
+                    // Remove the entry from the calendar
+                    evt.getEntry().removeFromCalendar();
+                }
+                // Entry full day property changes
+                else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
+                    // Remove the entry from the calendar
+                    evt.getEntry().removeFromCalendar();
+
+                    // Create a new entry with the old interval
+                    Entry<Object> entry = new Entry<>(
+                            evt.getEntry().getTitle(),
+                            evt.getEntry().getInterval(),
+                            evt.getEntry().getId());
+                    entry.setFullDay(!evt.getEntry().isFullDay()); // Can't use getOldFullDay() here because it's broken
+                    calendar.addEntry(entry);
+                }
+                // Entry interval property changes
+                else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
+                    // Remove the entry from the calendar
+                    evt.getEntry().removeFromCalendar();
+
+                    // Create a new entry with the old interval
+                    Entry<Object> entry = new Entry<>(
+                            evt.getEntry().getTitle(),
+                            evt.getOldInterval(),
+                            evt.getEntry().getId());
+                    entry.setFullDay(evt.getEntry().isFullDay());
+                    calendar.addEntry(entry);
+                }
+
+                // Show an alert to the user
+                boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
+                alert.setTitle(intersects ? "Conflicting Entry" : isNew ? "Invalid Entry" : "Invalid Entry Change");
+                alert.setHeaderText(intersects ? "Entry intersects with an existing entry" : "Not enough PTO balance");
+                alert.setContentText(
+                        intersects ? "You cannot take this day off because it conflicts with an existing entry."
+                                : isNew ? "You will not have enough PTO balance to take this day off!"
+                                        : "You will not have enough PTO balance to make this change!");
+                alert.showAndWait();
+
+                // Do not update the database since the entry was not added/changed
+                return;
             }
-            // Entry full day property changes
-            else if (evt.getEventType().equals(CalendarEvent.ENTRY_FULL_DAY_CHANGED)) {
-                // Remove the entry from the calendar
-                evt.getEntry().removeFromCalendar();
-
-                // Create a new entry with the old interval
-                Entry<Object> entry = new Entry<>(
-                        evt.getEntry().getTitle(),
-                        evt.getEntry().getInterval(),
-                        evt.getEntry().getId());
-                entry.setFullDay(!evt.getEntry().isFullDay()); // Can't use getOldFullDay() here because it's broken
-                calendar.addEntry(entry);
-            }
-            // Entry interval property changes
-            else if (evt.getEventType().equals(CalendarEvent.ENTRY_INTERVAL_CHANGED)) {
-                // Remove the entry from the calendar
-                evt.getEntry().removeFromCalendar();
-
-                // Create a new entry with the old interval
-                Entry<Object> entry = new Entry<>(
-                        evt.getEntry().getTitle(),
-                        evt.getOldInterval(),
-                        evt.getEntry().getId());
-                entry.setFullDay(evt.getEntry().isFullDay());
-                calendar.addEntry(entry);
-            }
-
-            // Show an alert to the user
-            boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-            alert.setTitle(intersects ? "Conflicting Entry" : isNew ? "Invalid Entry" : "Invalid Entry Change");
-            alert.setHeaderText(intersects ? "Entry intersects with an existing entry" : "Not enough PTO balance");
-            alert.setContentText(
-                    intersects ? "You cannot take this day off because it conflicts with an existing entry."
-                            : isNew ? "You will not have enough PTO balance to take this day off!"
-                                    : "You will not have enough PTO balance to make this change!");
-            alert.showAndWait();
-        } else {
-            // Otherwise, update the database with the current entries
-            ptoDatabase.updateVacations(entriesHelper.getAllEntries());
         }
+
+        // Update the database with the current entries
+        ptoDatabase.updateVacations(entriesHelper.getAllEntries());
     }
 
     /**
