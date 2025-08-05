@@ -40,6 +40,39 @@ public class PTOCalculatorTest {
         calendar = new Calendar<>();
     }
 
+    // region Calculate Deduction
+
+    @Test
+    public void testCalculateDeductionFullDay() {
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+
+        double deduction = ptoCalculator.calculateDeduction(entry);
+
+        assert deduction == 8 : "Expected 8 hours of deduction, but got " + deduction;
+    }
+
+    @Test
+    public void testCalculateDeductionMultiDay() {
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 0, 0), LocalDateTime.of(2025, 1, 2, 23, 59));
+        Entry<?> entry = new Entry<>("Test", interval);
+
+        double deduction = ptoCalculator.calculateDeduction(entry);
+
+        assert deduction == 8 : "Expected 8 hours of deduction, but got " + deduction;
+    }
+
+    @Test
+    public void testCalculateDeductionPartialDay() {
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+
+        double deduction = ptoCalculator.calculateDeduction(entry);
+
+        assert deduction == 4 : "Expected 4 hours of deduction, but got " + deduction;
+    }
+
     // region Compute Accrual
 
     @Test
@@ -86,6 +119,30 @@ public class PTOCalculatorTest {
         double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate);
 
         assert accruedPto == 360 : "Expected 360 hours of accrued PTO, but got " + accruedPto;
+    }
+
+    // region Accure-Limit
+
+    @Test
+    public void testAccrueAndApplyLimitsMaxBalanceCapped() {
+        LocalDate from = LocalDate.of(2025, 1, 1);
+        LocalDate to = LocalDate.of(2025, 6, 30);
+
+        double newBalance = ptoCalculator.accrueAndApplyLimits(from, to, 40, false);
+
+        double expectedBalance = userSettings.getMaxBalance();
+        assert newBalance == expectedBalance : "Expected balance to be " + expectedBalance + ", but got " + newBalance;
+    }
+
+    @Test
+    public void testAccrueAndApplyLimitsCarryOverCapped() {
+        LocalDate from = LocalDate.of(2025, 12, 1);
+        LocalDate to = LocalDate.of(2026, 1, 1);
+
+        double newBalance = ptoCalculator.accrueAndApplyLimits(from, to, 40, true);
+
+        assert newBalance == userSettings.getCarryOverLimit()
+                : "Expected balance to be " + userSettings.getCarryOverLimit() + ", but got " + newBalance;
     }
 
     // region Accrued Balance

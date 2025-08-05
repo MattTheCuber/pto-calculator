@@ -136,7 +136,7 @@ public class PTOCalculatorApp extends Application {
         }
     }
 
-    /*
+    /**
      * Configure the initial setup for the calendar view.
      */
     public void configureCalendarView() {
@@ -158,7 +158,7 @@ public class PTOCalculatorApp extends Application {
         calendarView.setDefaultCalendarProvider(control -> calendar);
     }
 
-    /*
+    /**
      * Customize the calendar view and controls.
      */
     public void customizeCalendarView() {
@@ -285,7 +285,7 @@ public class PTOCalculatorApp extends Application {
         projectedBalancePopOver.setAutoHide(true);
     }
 
-    /*
+    /**
      * Builds the extra toolbar controls for the calendar view.
      */
     public void buildExtraToolbarControls() {
@@ -661,7 +661,7 @@ public class PTOCalculatorApp extends Application {
         currentBalanceLabel.setText(String.format("Current PTO Balance: %.2f", userSettings.getCurrentBalance()));
     }
 
-    /*
+    /**
      * Confirms deletion of selected entries.
      */
     private void confirmDeletion(ObservableSet<Entry<?>> entries) {
