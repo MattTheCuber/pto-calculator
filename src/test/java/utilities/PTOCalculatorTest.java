@@ -221,6 +221,36 @@ public class PTOCalculatorTest {
     }
 
     @Test
+    public void testComputeAccruedBalanceCapSameDayAsEntry() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1); // 31 days
+        LocalDate targetDate = LocalDate.of(2025, 2, 11); // 28 days, should reach cap on 2/9/2025
+        Interval interval = new Interval(LocalDateTime.of(2025, 2, 10, 9, 0), LocalDateTime.of(2025, 2, 10, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        assert balance == 73 : "Expected balance to be 73, but got " + balance;
+    }
+
+    @Test
+    public void testComputeAccruedBalanceCarryOverExpirationSameDayAsEntry() {
+        LocalDate startDate = LocalDate.of(2025, 12, 30);
+        LocalDate targetDate = LocalDate.of(2026, 1, 2);
+        Interval interval = new Interval(LocalDateTime.of(2026, 1, 1, 9, 0), LocalDateTime.of(2026, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        assert balance == 33 : "Expected balance to be 33, but got " + balance;
+    }
+
+    @Test
     public void testComputeAccruedBalanceEverything() {
         LocalDate startDate = LocalDate.of(2025, 7, 1);
         LocalDate targetDate = LocalDate.of(2026, 1, 10);
