@@ -7,11 +7,14 @@ package utilities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.MonthDay;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import com.calendarfx.model.Calendar;
 import com.calendarfx.model.Entry;
 import com.calendarfx.model.Interval;
 
@@ -20,6 +23,7 @@ import model.UserSettings;
 public class PTOCalculatorTest {
     private UserSettings userSettings;
     private PTOCalculator ptoCalculator;
+    private Calendar<?> calendar;
 
     @Before
     public void setUp() {
@@ -32,61 +36,18 @@ public class PTOCalculatorTest {
         userSettings.setExpirationDate(MonthDay.of(1, 1));
 
         ptoCalculator = new PTOCalculator(userSettings);
+
+        calendar = new Calendar<>();
     }
 
-    @Test
-    public void testOverlappingDays() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate endDate = LocalDate.of(2025, 1, 10);
-        LocalDate targetDate = LocalDate.of(2025, 1, 5);
-
-        double overlappingDays = ptoCalculator.overlappingDays(startDate, endDate, targetDate);
-
-        // The overlapping days should be 4 (1st, 2nd, 3rd, and 4th)
-        // Note: The targetDate is exclusive, so we count up to the 4th but not the 5th.
-        assert overlappingDays == 4 : "Expected 4 overlapping days, but got " + overlappingDays;
-    }
-
-    @Test
-    public void testOverlappingDaysEndDateOnly() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate endDate = LocalDate.of(2025, 1, 10);
-        LocalDate targetDate = LocalDate.of(2025, 1, 2);
-
-        double overlappingDays = ptoCalculator.overlappingDays(startDate, endDate, targetDate);
-
-        assert overlappingDays == 1 : "Expected 1 overlapping day, but got " + overlappingDays;
-    }
-
-    @Test
-    public void testOverlappingDaysWithCompleteOverlap() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate endDate = LocalDate.of(2025, 1, 10);
-        LocalDate targetDate = LocalDate.of(2025, 1, 11);
-
-        double overlappingDays = ptoCalculator.overlappingDays(startDate, endDate, targetDate);
-
-        assert overlappingDays == 10 : "Expected 10 overlapping days, but got " + overlappingDays;
-    }
-
-    @Test
-    public void testOverlappingDaysWithNoOverlap() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate endDate = LocalDate.of(2025, 1, 10);
-        LocalDate targetDate = LocalDate.of(2025, 1, 1);
-
-        double overlappingDays = ptoCalculator.overlappingDays(startDate, endDate, targetDate);
-
-        assert overlappingDays == 0 : "Expected 0 overlapping days, but got " + overlappingDays;
-    }
+    // region Compute Accrual
 
     @Test
     public void testComputeAccrualBetweenDates() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        List<Entry<?>> entries = List.of();
 
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate);
 
         assert accruedPto == 1 : "Expected 1 hour of accrued PTO, but got " + accruedPto;
     }
@@ -95,9 +56,8 @@ public class PTOCalculatorTest {
     public void testComputeAccrualBetweenDatesLonger() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2026, 1, 1);
-        List<Entry<?>> entries = List.of();
 
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate);
 
         assert accruedPto == 365 : "Expected 365 hours of accrued PTO, but got " + accruedPto;
     }
@@ -109,9 +69,8 @@ public class PTOCalculatorTest {
 
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        List<Entry<?>> entries = List.of();
 
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate);
 
         assert accruedPto == 2 : "Expected 2 hours of accrued PTO, but got " + accruedPto;
     }
@@ -123,100 +82,19 @@ public class PTOCalculatorTest {
 
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 6, 30);
-        List<Entry<?>> entries = List.of();
 
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
+        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate);
 
         assert accruedPto == 360 : "Expected 360 hours of accrued PTO, but got " + accruedPto;
     }
 
-    @Test
-    public void testComputeAccrualBetweenDatesWithASingleDayEntry() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 2, 1);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == 27 : "Expected 27 hours of accrued PTO, but got " + accruedPto;
-    }
-
-    @Test
-    public void testComputeAccrualBetweenDatesWithASingleFullDayEntry() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 2, 1);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        entry.setFullDay(true);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == 23 : "Expected 23 hours of accrued PTO, but got " + accruedPto;
-    }
-
-    @Test
-    public void testComputeAccrualBetweenDatesWithAMultiDayEntry() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 2, 1);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 29, 9, 0), LocalDateTime.of(2025, 1, 30, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        entry.setFullDay(true);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == 15 : "Expected 15 hours of accrued PTO, but got " + accruedPto;
-    }
-
-    @Test
-    public void testComputeAccrualBetweenDatesWithASingleDayEntryNegative() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == -3 : "Expected -3 hours of accrued PTO, but got " + accruedPto;
-    }
-
-    @Test
-    public void testComputeAccrualBetweenDatesWithASingleFullDayEntryNegative() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        entry.setFullDay(true);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == -7 : "Expected -7 hours of accrued PTO, but got " + accruedPto;
-    }
-
-    @Test
-    public void testComputeAccrualBetweenDatesWithAMultiDayEntryNegative() {
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate targetDate = LocalDate.of(2025, 1, 3);
-        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 9, 0), LocalDateTime.of(2025, 1, 2, 17, 0));
-        Entry<?> entry = new Entry<>("Test", interval);
-        entry.setFullDay(true);
-        List<Entry<?>> entries = List.of(entry);
-
-        double accruedPto = ptoCalculator.computeAccrualBetweenDates(startDate, targetDate, entries);
-
-        assert accruedPto == -14 : "Expected -14 hours of accrued PTO, but got " + accruedPto;
-    }
+    // region Accrued Balance
 
     @Test
     public void testComputeAccruedBalance() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 1, 2);
-        List<Entry<?>> entries = List.of();
+        Map<LocalDate, List<Entry<?>>> entries = Map.of();
 
         double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
 
@@ -228,7 +106,7 @@ public class PTOCalculatorTest {
     public void testComputeAccruedBalanceMaxBalanceCapped() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate targetDate = LocalDate.of(2025, 6, 30);
-        List<Entry<?>> entries = List.of();
+        Map<LocalDate, List<Entry<?>>> entries = Map.of();
 
         double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
 
@@ -240,7 +118,7 @@ public class PTOCalculatorTest {
     public void testComputeAccruedBalanceCarryOverCapped() {
         LocalDate startDate = LocalDate.of(2025, 12, 1);
         LocalDate targetDate = LocalDate.of(2026, 1, 10);
-        List<Entry<?>> entries = List.of();
+        Map<LocalDate, List<Entry<?>>> entries = Map.of();
 
         double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
 
@@ -249,15 +127,111 @@ public class PTOCalculatorTest {
     }
 
     @Test
+    public void testComputeAccruedBalanceWithASingleDayEntry() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 2, 1);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + 27;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccruedBalanceWithASingleFullDayEntry() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 2, 1);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 20, 13, 0), LocalDateTime.of(2025, 1, 20, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + 23;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccrualBetweenDatesWithAMultiDayEntry() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 2, 1);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 29, 9, 0), LocalDateTime.of(2025, 1, 30, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + 15;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccrualBetweenDatesWithASingleDayEntryNegative() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 1, 2);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + -3;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccruedBalanceWithASingleFullDayEntryNegative() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 1, 2);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 13, 0), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + -7;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
+    public void testComputeAccruedBalanceWithAMultiDayEntryNegative() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 1, 3);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 9, 0), LocalDateTime.of(2025, 1, 2, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + -14;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
     public void testComputeAccruedBalanceEverything() {
         LocalDate startDate = LocalDate.of(2025, 7, 1);
         LocalDate targetDate = LocalDate.of(2026, 1, 10);
         Interval interval1 = new Interval(LocalDateTime.of(2025, 7, 20, 9, 0), LocalDateTime.of(2025, 7, 20, 17, 0));
         Entry<?> entry1 = new Entry<>("Test 1", interval1);
+        entry1.setCalendar(calendar);
         Interval interval2 = new Interval(LocalDateTime.of(2026, 1, 2, 9, 0), LocalDateTime.of(2026, 1, 3, 17, 0));
         Entry<?> entry2 = new Entry<>("Test 2", interval2);
         entry2.setFullDay(true);
-        List<Entry<?>> entries = List.of(entry1, entry2);
+        entry2.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
 
         double balance = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
 

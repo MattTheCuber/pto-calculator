@@ -30,25 +30,25 @@ public class PTOCalculator {
     }
 
     /**
-     * Computes the projected PTO accrual at a given date, considering accrual
+     * Computes the projected PTO balance at a given date, considering accrual
      * configuration and existing time off entries.
      * 
      * @param date    the date to compute the balance for
      * @param entries the set of existing time off entries
-     * @return the projected PTO accrual at the beginning of the specified date
+     * @return the projected PTO balance at the beginning of the specified date
      */
     public double computeBalanceAtDate(LocalDate date, Map<LocalDate, List<Entry<?>>> entries) {
         return computeAccruedBalance(LocalDate.now(), date, entries);
     }
 
     /**
-     * Computes the projected PTO accrual between two dates, considering accrual
-     * configuration and existing time off entries.
+     * Computes the projected PTO balance with accrual between two dates,
+     * considering accrual configuration and existing time off entries.
      * 
      * @param startDate the start date to compute the accrual from
      * @param endDate   the end date to compute the accrual to
      * @param entries   the set of existing time off entries
-     * @return the projected PTO accrual between the specified dates
+     * @return the projected PTO balance with accrual between the specified dates
      */
     public double computeAccruedBalance(LocalDate startDate, LocalDate targetDate,
             Map<LocalDate, List<Entry<?>>> entries) {
