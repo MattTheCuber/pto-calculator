@@ -242,6 +242,12 @@ public class PTOCalculatorApp extends Application {
             MonthView monthView = calendarView.getMonthPage().getMonthView();
             ZonedDateTime date = monthView.getZonedDateTimeAt(evt.getX(), evt.getY(), calendarView.getZoneId());
 
+            // Fixes clicking on a date in the previous/next month
+            if (date == null) {
+                projectedBalancePopOver.hide();
+                return;
+            }
+
             // Open the balance popup for the clicked date
             openBalancePopup(evt, monthView, date.toLocalDate());
         });
