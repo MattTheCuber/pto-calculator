@@ -121,7 +121,7 @@ public class PTOCalculatorTest {
         assert accruedPto == 360 : "Expected 360 hours of accrued PTO, but got " + accruedPto;
     }
 
-    // region Accure-Limit
+    // region Accrue-Limit
 
     @Test
     public void testAccrueAndApplyLimitsMaxBalanceCapped() {

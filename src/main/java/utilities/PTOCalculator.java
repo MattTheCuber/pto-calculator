@@ -45,9 +45,9 @@ public class PTOCalculator {
      * Computes the projected PTO balance with accrual between two dates,
      * considering accrual configuration and existing time off entries.
      * 
-     * @param startDate the start date to compute the accrual from
-     * @param endDate   the end date to compute the accrual to
-     * @param entries   the set of existing time off entries
+     * @param startDate  the start date to compute the accrual from
+     * @param targetDate the end date to compute the accrual to
+     * @param entries    the set of existing time off entries
      * @return the projected PTO balance with accrual between the specified dates
      */
     public double computeAccruedBalance(LocalDate startDate, LocalDate targetDate,
