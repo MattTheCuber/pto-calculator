@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -478,17 +479,19 @@ public class PTOCalculatorApp extends Application {
         // Log the calendar event to the console
         logCalendarEvent(evt);
 
-        // Check if the entry is in the future and has a calendar
-        boolean isInPast = evt.getEntry().getEndDate().isBefore(LocalDate.now());
+        // Check if the entry has a calendar
         boolean hasCalendar = evt.getEntry().getCalendar() != null;
-        if (hasCalendar && !isInPast) {
+        if (hasCalendar) {
+            // Check if the entry is in the past
+            boolean isInPast = evt.getEntry().getEndDate().isBefore(LocalDate.now());
+
             // Get the entries
             Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(
                     LocalDate.now(),
-                    evt.getEntry().getInterval().getEndDate(),
+                    LocalDate.MAX,
                     ZoneId.systemDefault());
 
-            // If the entry intersects with any existing entries
+            // If the change intersects with any existing entries
             if (entriesHelper.intersects(evt.getEntry())) {
                 // Revert the changes made to the entry
                 revertCalendarEvent(evt);
@@ -504,26 +507,53 @@ public class PTOCalculatorApp extends Application {
                 // Do not update the database since the change was reverted
                 return;
             }
-            // If the entry is invalid
-            else if (!ptoCalculator.validateEntry(evt.getEntry(), entries)) {
-                // Revert the changes made to the entry
-                revertCalendarEvent(evt);
+            // If the change is invalid
+            if (!isInPast) {
+                if (!ptoCalculator.validateEntry(evt.getEntry(), entries)) {
+                    // Revert the changes made to the entry
+                    revertCalendarEvent(evt);
 
-                // Show an alert to the user
-                boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setHeaderText("Not enough PTO balance");
-                if (isNew) {
-                    alert.setTitle("Invalid Entry");
-                    alert.setContentText("You will not have enough PTO balance to take this day off!");
-                } else {
-                    alert.setTitle("Invalid Entry Change");
-                    alert.setContentText("You will not have enough PTO balance to make this change!");
+                    // Show an alert to the user
+                    boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setHeaderText("Not enough PTO balance");
+                    if (isNew) {
+                        alert.setTitle("Invalid Entry");
+                        alert.setContentText("You will not have enough PTO balance to take this day off!");
+                    } else {
+                        alert.setTitle("Invalid Entry Change");
+                        alert.setContentText("You will not have enough PTO balance to make this change!");
+                    }
+                    alert.showAndWait();
+
+                    // Do not update the database since the change was reverted
+                    return;
                 }
-                alert.showAndWait();
 
-                // Do not update the database since the change was reverted
-                return;
+                // If the change makes other entries invalid
+                for (Entry<?> entry : entriesHelper.getAllEntries()) {
+                    if (!entry.getEndDate().isBefore(LocalDate.now()) && !ptoCalculator.validateEntry(entry, entries)) {
+                        // Revert the changes made to the entry
+                        revertCalendarEvent(evt);
+
+                        // Show an alert to the user
+                        boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
+                        Alert alert = new Alert(Alert.AlertType.WARNING);
+                        alert.setHeaderText("Invalidates other entries");
+                        String dateString = entry.getStartDate().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy"));
+                        if (isNew) {
+                            alert.setTitle("Invalid Entry");
+                            alert.setContentText("Adding this entry will invalidate an entry on " + dateString + "!");
+                        } else {
+                            alert.setTitle("Invalid Entry Change");
+                            alert.setContentText("Changing this entry will invalidate an entry on " + dateString + "!");
+                        }
+                        alert.showAndWait();
+
+                        // Do not update the database since the change was reverted
+                        return;
+                    }
+                }
             }
         }
 
