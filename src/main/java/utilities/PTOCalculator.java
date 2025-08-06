@@ -156,7 +156,7 @@ public class PTOCalculator {
             return 8;
         }
         // Otherwise, deduct the actual duration in hours, capped at 8 hours
-        return Math.min(entry.getDuration().toHours(), 8);
+        return Math.min(entry.getDuration().toMinutes() / 60.0, 8);
     }
 
     /**

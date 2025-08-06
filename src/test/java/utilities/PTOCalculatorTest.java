@@ -73,6 +73,16 @@ public class PTOCalculatorTest {
         assert deduction == 4 : "Expected 4 hours of deduction, but got " + deduction;
     }
 
+    @Test
+    public void testCalculateDeductionPartialDayPartialHour() {
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 1, 15, 15), LocalDateTime.of(2025, 1, 1, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+
+        double deduction = ptoCalculator.calculateDeduction(entry);
+
+        assert deduction == 1.75 : "Expected 1.75 hours of deduction, but got " + deduction;
+    }
+
     // region Compute Accrual
 
     @Test
