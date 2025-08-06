@@ -380,10 +380,10 @@ public class SettingsDialog {
         userSettings.setCurrentBalance(balanceSpinner.getValue());
         userSettings.setAccrualRate(accrualRateSpinner.getValue());
         userSettings.setAccrualPeriod(accrualPeriodCombo.getValue());
-        if (maxBalanceDisableCheck.isSelected()) {
+        if (!maxBalanceDisableCheck.isSelected()) {
             userSettings.setMaxBalance(maxBalanceSpinner.getValue());
         }
-        if (carryOverDisableCheck.isSelected()) {
+        if (!carryOverDisableCheck.isSelected()) {
             userSettings.setCarryOverLimit(carryOverSpinner.getValue());
             MonthDay monthDay = MonthDay.of(
                     Month.valueOf(expirationMonthComboBox.getValue()),
