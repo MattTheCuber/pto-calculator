@@ -308,13 +308,29 @@ public class PTOCalculatorTest {
     }
 
     @Test
+    public void testComputeAccruedBalanceWithASingleFullDayEntryWeekend() {
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate targetDate = LocalDate.of(2025, 2, 1);
+        Interval interval = new Interval(LocalDateTime.of(2025, 1, 12, 13, 0), LocalDateTime.of(2025, 1, 12, 17, 0));
+        Entry<?> entry = new Entry<>("Test", interval);
+        entry.setFullDay(true);
+        entry.setCalendar(calendar);
+        Map<LocalDate, List<Entry<?>>> entries = calendar.findEntries(startDate, targetDate, ZoneId.systemDefault());
+
+        double accruedPto = ptoCalculator.computeAccruedBalance(startDate, targetDate, entries);
+
+        double expectedBalance = userSettings.getCurrentBalance() + 31;
+        assert accruedPto == expectedBalance : "Expected " + expectedBalance + " hours of PTO, but got " + accruedPto;
+    }
+
+    @Test
     public void testComputeAccruedBalanceEverything() {
         LocalDate startDate = LocalDate.of(2025, 7, 1);
         LocalDate targetDate = LocalDate.of(2026, 1, 10);
-        Interval interval1 = new Interval(LocalDateTime.of(2025, 7, 20, 9, 0), LocalDateTime.of(2025, 7, 20, 17, 0));
+        Interval interval1 = new Interval(LocalDateTime.of(2025, 7, 21, 9, 0), LocalDateTime.of(2025, 7, 21, 17, 0));
         Entry<?> entry1 = new Entry<>("Test 1", interval1);
         entry1.setCalendar(calendar);
-        Interval interval2 = new Interval(LocalDateTime.of(2026, 1, 2, 9, 0), LocalDateTime.of(2026, 1, 3, 17, 0));
+        Interval interval2 = new Interval(LocalDateTime.of(2026, 1, 4, 9, 0), LocalDateTime.of(2026, 1, 6, 17, 0));
         Entry<?> entry2 = new Entry<>("Test 2", interval2);
         entry2.setFullDay(true);
         entry2.setCalendar(calendar);

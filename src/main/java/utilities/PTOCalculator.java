@@ -87,9 +87,12 @@ public class PTOCalculator {
             // Compute accrual until the current date
             balance = accrueAndApplyLimits(currentDate, nextEntryDate, balance, false);
 
-            // For each entry on the current date, deduct the PTO used
-            for (Entry<?> entry : currentEntries.getValue()) {
-                balance -= calculateDeduction(entry);
+            // If it is not a weekend
+            if (nextEntryDate.getDayOfWeek().getValue() < 6) {
+                // For each entry on the current date, deduct the PTO used
+                for (Entry<?> entry : currentEntries.getValue()) {
+                    balance -= calculateDeduction(entry);
+                }
             }
 
             // Update the current date
