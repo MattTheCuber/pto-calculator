@@ -28,7 +28,9 @@ public class UserSettingsTest {
         assert settings.getCurrentBalance() == 0.0;
         assert settings.getAccrualPeriod() == AccrualPeriod.WEEKLY;
         assert settings.getAccrualRate() == 0.0;
+        assert settings.isMaxBalanceEnabled() == false;
         assert settings.getMaxBalance() == 0.0;
+        assert settings.isCarryOverEnabled() == false;
         assert settings.getCarryOverLimit() == 0.0;
         assert settings.getExpirationDate() == null;
     }
@@ -39,7 +41,9 @@ public class UserSettingsTest {
         UserSettings settings = new UserSettings(20.0, AccrualPeriod.MONTHLY, 40.0, 10.0, expiration, 5.0);
         assert settings.getAccrualRate() == 20.0;
         assert settings.getAccrualPeriod() == AccrualPeriod.MONTHLY;
+        assert settings.isMaxBalanceEnabled() == true;
         assert settings.getMaxBalance() == 40.0;
+        assert settings.isCarryOverEnabled() == true;
         assert settings.getCarryOverLimit() == 10.0;
         assert settings.getExpirationDate().equals(expiration);
         assert settings.getCurrentBalance() == 5.0;
@@ -64,6 +68,7 @@ public class UserSettingsTest {
     public void testSetAndGetMaxBalance() {
         settings.setMaxBalance(50.0);
         assert settings.getMaxBalance() == 50.0;
+        assert settings.isMaxBalanceEnabled() == true;
         assertThrows(IllegalArgumentException.class, () -> {
             settings.setMaxBalance(-10.0);
         });

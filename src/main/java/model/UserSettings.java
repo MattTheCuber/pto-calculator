@@ -104,6 +104,15 @@ public class UserSettings {
     }
 
     /**
+     * Checks if the maximum balance is enabled.
+     * 
+     * @return true if the maximum balance is set, otherwise false
+     */
+    public boolean isMaxBalanceEnabled() {
+        return maxBalance > 0;
+    }
+
+    /**
      * Sets the maximum balance.
      * 
      * @param maxBalance the maximum balance to set
@@ -115,6 +124,15 @@ public class UserSettings {
         }
 
         this.maxBalance = maxBalance;
+    }
+
+    /**
+     * Checks if the carry over limit is enabled.
+     * 
+     * @return true if the carry over limit is set, otherwise false
+     */
+    public boolean isCarryOverEnabled() {
+        return carryOverLimit > 0 && expirationDate != null;
     }
 
     /**

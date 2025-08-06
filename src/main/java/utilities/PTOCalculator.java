@@ -75,7 +75,7 @@ public class PTOCalculator {
             }
 
             // If the carry over limit is applied before the next entry usage
-            if (nextExpirationDate != null && !nextExpirationDate.isAfter(nextEntryDate)) {
+            if (userSettings.isCarryOverEnabled() && !nextExpirationDate.isAfter(nextEntryDate)) {
                 // Compute accrual until the next expiration date
                 balance = accrueAndApplyLimits(currentDate, nextExpirationDate, balance, true);
 
@@ -99,13 +99,13 @@ public class PTOCalculator {
             currentDate = nextEntryDate;
 
             // Account for max balance
-            if (userSettings.getMaxBalance() > 0) {
+            if (userSettings.isMaxBalanceEnabled()) {
                 balance = Math.min(balance, userSettings.getMaxBalance());
             }
         }
 
         // If the carry over limit is applied before the target date
-        if (nextExpirationDate != null && !nextExpirationDate.isAfter(targetDate)) {
+        if (userSettings.isCarryOverEnabled() && !nextExpirationDate.isAfter(targetDate)) {
             // Compute accrual until the next expiration date and apply limits
             balance = accrueAndApplyLimits(currentDate, nextExpirationDate, balance, true);
 
@@ -135,7 +135,7 @@ public class PTOCalculator {
         double newBalance = currentBalance + accrued;
 
         // Apply max balance
-        if (userSettings.getMaxBalance() > 0) {
+        if (userSettings.isMaxBalanceEnabled()) {
             newBalance = Math.min(newBalance, userSettings.getMaxBalance());
         }
 
