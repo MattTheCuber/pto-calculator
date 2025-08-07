@@ -10,7 +10,7 @@
 
 1. Install [JDK](https://www.oracle.com/java/technologies/downloads/) (make sure its in your `PATH`).
 2. Install [Maven](https://maven.apache.org/download.cgi) (make sure its in your `PATH`).
-3. Run `mvn mvn javafx:run` to start the GUI application.
+3. Run `mvn javafx:run` to start the GUI application.
 4. Run `mvn test` to test the program.
 
 ## Building Instructions
