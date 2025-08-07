@@ -1,3 +1,5 @@
 target/
 *.class
 *.db
+*.exe
+dependency-reduced-pom.xml
