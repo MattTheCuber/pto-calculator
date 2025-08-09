@@ -4,6 +4,8 @@
 
 ## Demo
 
+[Video](https://www.youtube.com/watch?v=eoxvbV9p1PQ)
+
 ![Demonstration](docs/images/demonstration.png)
 
 ## Installation
