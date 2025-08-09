@@ -191,7 +191,7 @@ public class PTOCalculator {
         if (!entry.getEndDate().isBefore(LocalDate.now())) {
             if (entry.isMultiDay()) {
                 // Get the number of days in the entry
-                double days = entry.getStartDate().toEpochDay() - entry.getEndDate().toEpochDay();
+                double days = entry.getEndDate().toEpochDay() - entry.getStartDate().toEpochDay();
                 // Ensure the balance is sufficient for the entire duration
                 return computeBalanceAtDate(entry.getEndDate(), entries) >= days * 8;
             } else {
