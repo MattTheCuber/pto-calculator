@@ -27,6 +27,7 @@ import com.calendarfx.view.CalendarView;
 import com.calendarfx.view.CalendarView.Page;
 import com.calendarfx.view.DateControl.CreateEntryParameter;
 import com.calendarfx.view.DateControl.EntryContextMenuParameter;
+import com.calendarfx.view.EntryViewBase;
 import com.calendarfx.view.MonthSheetView;
 import com.calendarfx.view.MonthSheetView.ClickBehaviour;
 import com.calendarfx.view.MonthView;
@@ -71,6 +72,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import model.PTODatabase;
 import model.UserSettings;
@@ -206,6 +208,24 @@ public class PTOCalculatorApp extends Application {
             GridPane box = (GridPane) details.getChildren().getFirst();
             box.getChildren().remove(9);
             box.getChildren().remove(8);
+
+            // Fix bug with hiding when interacting with the fields
+            // https://github.com/dlsc-software-consulting-gmbh/CalendarFX/issues/208
+            PopOver popOver = popUp.getPopOver();
+            // When the popover is hidden
+            popOver.addEventFilter(WindowEvent.WINDOW_HIDDEN, evt -> {
+                // Check if reason for closing if because the scene was redrawn
+                boolean anchorLost = (popOver.getOwnerNode() == null) || (popOver.getOwnerNode().getScene() == null);
+                if (anchorLost) {
+                    Platform.runLater(() -> {
+                        // Re-show the popover since the anchor was lost
+                        EntryViewBase<?> entryView = calendarView.findEntryView(param.getEntry());
+                        if (entryView != null && entryView.getScene() != null) {
+                            popOver.show(entryView);
+                        }
+                    });
+                }
+            });
 
             // Ensure the projected balance popup is closed
             projectedBalancePopOver.hide();
