@@ -4,7 +4,7 @@
 
 ## Demo
 
-[Video](https://www.youtube.com/watch?v=eoxvbV9p1PQ)
+[Video](https://www.youtube.com/watch?v=NqNEjELOV2M)
 
 ![Demonstration](docs/images/demonstration.png)
 
