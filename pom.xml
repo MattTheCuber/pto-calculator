@@ -103,38 +103,52 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.panteleyev</groupId>
-                <artifactId>jpackage-maven-plugin</artifactId>
-                <version>1.6.6</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jpackage</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <type>EXE</type>
-                            <name>PTO Planning Tool</name>
-                            <appVersion>1.1</appVersion>
-                            <input>target</input>
-                            <destination>target</destination>
-                            <mainJar>pto-calculator-1.1-shaded.jar</mainJar>
-                            <mainClass>gui.App</mainClass>
-                            <modulePaths>
-                                <modulePath>target/jmods</modulePath>
-                            </modulePaths>
-                            <addModules>
-                                javafx.controls,javafx.fxml,java.base,java.desktop,java.scripting,java.sql,jdk.jfr,jdk.unsupported,java.logging
-                            </addModules>
-                            <icon>icon.ico</icon>
-                            <winMenu>true</winMenu>
-                            <winDirChooser>true</winDirChooser>
-                            <winShortcutPrompt>true</winShortcutPrompt>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.6</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <type>EXE</type>
+                                    <name>PTO Planning Tool</name>
+                                    <appVersion>1.1</appVersion>
+                                    <input>target</input>
+                                    <destination>target</destination>
+                                    <mainJar>pto-calculator-1.1-shaded.jar</mainJar>
+                                    <mainClass>gui.App</mainClass>
+                                    <modulePaths>
+                                        <modulePath>target/jmods</modulePath>
+                                    </modulePaths>
+                                    <addModules>
+                                        javafx.controls,javafx.fxml,java.base,java.desktop,java.scripting,java.sql,jdk.jfr,jdk.unsupported,java.logging
+                                    </addModules>
+                                    <icon>icon.ico</icon>
+                                    <winMenu>true</winMenu>
+                                    <winDirChooser>true</winDirChooser>
+                                    <winShortcutPrompt>true</winShortcutPrompt>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
