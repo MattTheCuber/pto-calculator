@@ -63,25 +63,75 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.7.1</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>gui.PTOCalculatorApp</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>gui.App</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>target/jmods</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.6.6</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <type>EXE</type>
+                            <name>PTO Planning Tool</name>
+                            <appVersion>1.0</appVersion>
+                            <input>target</input>
+                            <destination>target</destination>
+                            <mainJar>pto-calculator-1.0-shaded.jar</mainJar>
+                            <mainClass>gui.App</mainClass>
+                            <modulePaths>
+                                <modulePath>target/jmods</modulePath>
+                            </modulePaths>
+                            <addModules>
+                                javafx.controls,javafx.fxml,java.base,java.desktop,java.scripting,java.sql,jdk.jfr,jdk.unsupported,java.logging
+                            </addModules>
+                            <icon>icon.ico</icon>
+                            <winMenu>true</winMenu>
+                            <winDirChooser>true</winDirChooser>
+                            <winShortcutPrompt>true</winShortcutPrompt>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

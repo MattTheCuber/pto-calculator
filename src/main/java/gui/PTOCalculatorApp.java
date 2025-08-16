@@ -519,7 +519,7 @@ public class PTOCalculatorApp extends Application {
                 revertCalendarEvent(evt);
 
                 // Show an alert to the user
-                Alert alert = new Alert(Alert.AlertType.WARNING);
+                Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Conflicting Entry");
                 alert.setHeaderText("Entry intersects with an existing entry");
                 alert.setContentText(
@@ -537,7 +537,7 @@ public class PTOCalculatorApp extends Application {
 
                     // Show an alert to the user
                     boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setHeaderText("Not enough PTO balance");
                     if (isNew) {
                         alert.setTitle("Invalid Entry");
@@ -560,7 +560,7 @@ public class PTOCalculatorApp extends Application {
 
                         // Show an alert to the user
                         boolean isNew = evt.getEventType().equals(CalendarEvent.ENTRY_CALENDAR_CHANGED);
-                        Alert alert = new Alert(Alert.AlertType.WARNING);
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
                         alert.setHeaderText("Invalidates other entries");
                         String dateString = entry.getStartDate().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy"));
                         if (isNew) {

@@ -19,5 +19,6 @@
 
 1. Install [Wix](https://github.com/wixtoolset/wix/releases/).
 2. Download the [JavaFX SDK](https://gluonhq.com/products/javafx/).
-3. Run `mvn clean package` to create a JAR file of the program.
-4. Run `java --module-path "C:\path\to\javafx" --add-modules javafx.controls,javafx.fxml -jar target\pto-calculator-1.0-jar-with-dependencies.jar` to run the app.
+3. Run `mvn clean package` to create a JAR file and installer for the program in the `./target/` folder.
+4. Run `java --module-path "C:\path\to\javafx" --add-modules javafx.controls,javafx.fxml -jar target\pto-calculator-1.0-jar-with-dependencies.jar` to run the app using the JAR file.
+5. Install the program by opening the installer.

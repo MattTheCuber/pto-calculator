@@ -4,6 +4,8 @@
 
 package model;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -26,7 +28,7 @@ import utilities.AccrualPeriod;
  */
 public class PTODatabase {
     private Connection connection;
-    private final String url = "jdbc:sqlite:ptoCalculator.db";
+    private final Path databasePath = Path.of(System.getenv("LOCALAPPDATA"), "PTO Planning Tool", "ptoCalculator.db");
     private int userId;
     private boolean firstTimeUser = false;
 
@@ -35,9 +37,16 @@ public class PTODatabase {
      * tables.
      */
     public PTODatabase() {
+        // Create the database directory if it does not exist
+        try {
+            Files.createDirectories(databasePath.getParent());
+        } catch (java.io.IOException e) {
+            System.out.println("Failed to create database directory: " + e.getMessage());
+        }
+
         // Establish the database connection
         try {
-            connection = DriverManager.getConnection(url);
+            connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
             if (connection != null) {
                 System.out.println("Connected to the database.");
             }
